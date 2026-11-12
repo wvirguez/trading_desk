@@ -6,7 +6,7 @@
 
 **Construir un terminal personal de investigación cuantitativa en el que agentes de IA generan hipótesis de trading auditables, mientras que todo cálculo de riesgo, tamaño de posición y métrica de rendimiento lo realiza código determinista. Las señales resultantes se validan con backtesting y se ejecutan solo en paper trading.**
 
-El MVP pretende ganar dinero en real. Y además pretende responder con rigor a una pregunta: *¿producen los agentes señales con valor esperado positivo, y puedo auditar por qué las produjeron?*
+El MVP no pretende ganar dinero en real. Y además pretende responder con rigor a una pregunta: *¿producen los agentes señales con valor esperado positivo, y puedo auditar por qué las produjeron?*
 
 ## 2. Público objetivo
 
