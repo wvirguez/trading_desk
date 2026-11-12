@@ -72,11 +72,11 @@ Resumen. El detalle completo está en [`specs/tech-stack.md`](specs/tech-stack.m
 
 | Capa | Tecnología | Propósito |
 | :--- | :--- | :--- |
-| **Frontend** | **Next.js 16.4 (App Router)**, React 19.3, TypeScript 5, Tailwind CSS 4, npm | Interfaz de terminal reactiva y densa. |
+| **Frontend** | **Next.js 16.4 (App Router)**, React 19.3, TypeScript 5, Tailwind CSS 4, Node 22+ con npm | Interfaz de terminal reactiva y densa. |
 | **Gráficos e interfaz** | `lightweight-charts` (TradingView), shadcn/ui, Lucide | Velas OHLCV, zonas de entrada, SL/TP, cajas FVG y curvas de capital. |
 | **Estado y tiempo real** | Zustand, TanStack Query, WebSocket, SSE | Estado del terminal, caché de servidor y streaming. |
 | **Contratos** | Pydantic v2 → OpenAPI → `openapi-typescript` | Los tipos TS se **generan**; no se escriben a mano. |
-| **API del backend** | **FastAPI**, **Uvicorn**, Pydantic v2, Python 3.11+ con **uv** | Endpoints async, validación estricta, SSE y WebSocket. |
+| **API del backend** | **FastAPI**, **Uvicorn**, Pydantic v2, Python 3.12 con **uv** | Endpoints async, validación estricta, SSE y WebSocket. |
 | **Capa de agentes** | **PydanticAI** + **Anthropic Claude** (`claude-sonnet-5-5` por defecto) | Salidas estructuradas y herramientas deterministas; orquestador async propio. |
 | **Núcleo cuantitativo** | `polars`, `numpy`, `scipy`, `statsmodels`, **backtester vectorizado propio** | ATR, estructura de mercado, Z-score, Hurst, ADF y métricas de backtest reproducibles. |
 | **Datos de mercado** | `ccxt` (BTC/USDT) y **OANDA v20 practice** (EUR/USD, XAU/USD, NAS100_USD) | Ingesta unificada de OHLCV normalizado en UTC. |
@@ -157,46 +157,42 @@ Pipeline async secuencial: **Structure → Quant → veto determinista → RiskA
 
 ## 📂 Estructura de directorios
 
-> La estructura objetivo es un monorepo. Actualmente la app Next.js está en la raíz; pasarla a `frontend/` es el paso 0.1 del [roadmap](specs/roadmap.md).
+> Las carpetas marcadas con *(fase N)* aún no existen; se crean en esa fase del [roadmap](specs/roadmap.md).
 
 ```
 trading_desk/
 ├── specs/                          # SDD: fuente única de verdad
-│   ├── mission.md
-│   ├── tech-stack.md
-│   └── roadmap.md
+│   ├── mission.md · tech-stack.md · roadmap.md
+│   └── YYYY-MM-DD-<funcionalidad>/ # plan.md, requirements.md, validation.md por funcionalidad
 │
-├── backend/                        # FastAPI + motor cuantitativo + agentes
+├── backend/                        # FastAPI + motor cuantitativo + agentes (Python 3.12, uv)
 │   ├── app/
 │   │   ├── api/v1/                 # Routers REST, SSE y WebSocket
-│   │   ├── agents/                 # Agentes PydanticAI y orquestador
-│   │   ├── quant/                  # Indicadores, Hurst, Z-score, backtester vectorizado
-│   │   ├── data_feeds/             # Adaptadores ccxt (cripto) y OANDA (FX + índices)
-│   │   ├── risk/                   # Position sizing, Kelly, correlación, guardas de drawdown
-│   │   ├── paper/                  # Simulador de ejecución (paper trading)
+│   │   ├── core/                   # Config (pydantic-settings), sesión de BD
 │   │   ├── models/                 # Modelos ORM SQLAlchemy 2.0
 │   │   ├── schemas/                # DTOs Pydantic v2 (contratos)
-│   │   ├── core/                   # Config, sesión de BD, ciclo de vida
+│   │   ├── data_feeds/             # (fase 1) Adaptadores ccxt y OANDA
+│   │   ├── quant/                  # (fase 2) Indicadores, Hurst, Z-score, backtester
+│   │   ├── risk/                   # (fase 2) Position sizing, Kelly, guardas de drawdown
+│   │   ├── agents/                 # (fase 3) Agentes PydanticAI y orquestador
+│   │   ├── paper/                  # (fase 4) Simulador de paper trading
 │   │   └── main.py                 # App FastAPI
 │   ├── alembic/                    # Migraciones
-│   ├── tests/                      # pytest: unitarios, propiedades y golden de backtest
+│   ├── scripts/setup_db.sh         # Rol, bases de datos y extensiones (idempotente)
+│   ├── tests/                      # pytest (marcador `db` para tests con BD real)
+│   ├── .env.example
 │   ├── pyproject.toml
 │   └── uv.lock
 │
-├── frontend/                       # Next.js 16 (App Router)
-│   ├── app/                        # Rutas: /desk, /backtest, /agents, /journal
-│   ├── components/
-│   │   ├── charts/                 # Wrappers de lightweight-charts y overlays
-│   │   ├── agents/                 # Feed de razonamiento
-│   │   └── quant/                  # Curvas de capital, métricas, blotter
-│   ├── hooks/                      # Hooks de WebSocket, SSE y TanStack Query
-│   ├── types/api.ts                # GENERADO con openapi-typescript (no editar)
-│   ├── store/                      # Estado Zustand (símbolo y timeframe activos)
-│   ├── e2e/                        # Tests de Playwright
+├── frontend/                       # Next.js 16 (App Router, Node 22+)
+│   ├── app/                        # Rutas (fase 4: /desk, /backtest, /agents, /journal)
+│   ├── components/ hooks/ store/   # (fase 4)
+│   ├── types/api.ts                # (fase 1) GENERADO con openapi-typescript (no editar)
+│   ├── AGENTS.md                   # Avisos de Next 16 para agentes (gestionado por next dev)
+│   ├── vitest.config.mts
 │   └── package.json
 │
-├── .github/workflows/              # CI: lint, typecheck y tests
-├── AGENTS.md
+├── .github/workflows/ci.yml        # CI: lint, typecheck, tests y build
 └── README.md
 ```
 
@@ -206,19 +202,27 @@ trading_desk/
 
 ### Requisitos previos
 
-- Python 3.11+ con [**uv**](https://docs.astral.sh/uv/)
-- Node.js 20+ con **npm**
-- **PostgreSQL 16+** con la extensión **TimescaleDB**, en ejecución local en el puerto 5432
-- Una cuenta **OANDA practice** (token de API y account ID)
-- Una clave de API de **Anthropic**
+- [**uv**](https://docs.astral.sh/uv/) (instala y fija Python 3.12 por su cuenta)
+- Node.js **22+** con **npm**
+- **PostgreSQL 16** con **TimescaleDB 2.x**, en local en el puerto **5432**
+- *(fase 1)* Una cuenta **OANDA practice** · *(fase 3)* una clave de API de **Anthropic**
 
-### 1. Inicializar PostgreSQL local
+### 1. PostgreSQL 16 + TimescaleDB (Ubuntu 22.04)
+
+Instala `postgresql-16` desde el repositorio apt oficial de PostgreSQL (PGDG) y `timescaledb-2-postgresql-16` desde el de Timescale. Después, configura y reinicia **solo** el clúster 16:
 
 ```bash
-psql -U postgres -c "CREATE USER quant_admin WITH PASSWORD 'quant_secret_dev';"
-psql -U postgres -c "CREATE DATABASE quant_terminal_db OWNER quant_admin;"
-psql -U postgres -d quant_terminal_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-psql -U postgres -d quant_terminal_db -c 'CREATE EXTENSION IF NOT EXISTS timescaledb;'
+sudo timescaledb-tune --yes \
+  --pg-config /usr/lib/postgresql/16/bin/pg_config \
+  --conf-path /etc/postgresql/16/main/postgresql.conf
+sudo systemctl restart postgresql@16-main
+pg_lsclusters            # 16/main online en el puerto 5432
+```
+
+Crea el rol, las bases de datos (`quant_terminal_db` y `quant_terminal_test`) y las extensiones. El script es idempotente:
+
+```bash
+sudo -u postgres bash < backend/scripts/setup_db.sh     # PGPORT=5432 por defecto
 ```
 
 ### 2. Backend (FastAPI + Uvicorn)
@@ -226,18 +230,10 @@ psql -U postgres -d quant_terminal_db -c 'CREATE EXTENSION IF NOT EXISTS timesca
 ```bash
 cd backend
 uv sync
-
 cp .env.example .env
-# Edita .env:
-# DATABASE_URL=postgresql+asyncpg://quant_admin:quant_secret_dev@localhost:5432/quant_terminal_db
-# ANTHROPIC_API_KEY=sk-ant-...
-# LLM_MODEL=claude-sonnet-5-5
-# OANDA_API_TOKEN=...
-# OANDA_ACCOUNT_ID=...
-# OANDA_ENV=practice
-
 uv run alembic upgrade head
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn app.main:app --reload             # http://localhost:8000/docs
+curl localhost:8000/api/v1/health                # 200 {"status":"ok",...} · 503 si la BD falla
 ```
 
 ### 3. Frontend (Next.js)
@@ -245,26 +241,28 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```bash
 cd frontend
 npm install
-
 cp .env.local.example .env.local
-# NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-# NEXT_PUBLIC_WS_URL=ws://localhost:8000/api/v1/ws
-
-npm run gen:api   # Regenera types/api.ts desde el OpenAPI del backend
-npm run dev
+npm run dev                                      # http://localhost:3000
 ```
 
-> ⚠️ Next.js 16 introduce cambios incompatibles con versiones anteriores. Antes de escribir código de frontend, consulta `node_modules/next/dist/docs/` (véase [`AGENTS.md`](AGENTS.md)).
+> ⚠️ Next.js 16 introduce cambios incompatibles con versiones anteriores. Antes de escribir código de frontend, consulta `frontend/node_modules/next/dist/docs/` (véase [`frontend/AGENTS.md`](frontend/AGENTS.md)).
 
 ### 4. Calidad y tests
 
 ```bash
 # Backend
-cd backend && uv run ruff check . && uv run mypy app && uv run pytest
+cd backend
+uv run ruff check . && uv run ruff format --check .
+uv run mypy app                                  # strict
+uv run pytest                                    # todos (requiere la BD de tests)
+uv run pytest -m "not db"                        # sin base de datos
 
 # Frontend
-cd frontend && npm run lint && npx tsc --noEmit && npx vitest run && npx playwright test
+cd frontend
+npm run lint && npm run typecheck && npm test && npm run build
 ```
+
+La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo anterior en cada PR contra un *service* `timescale/timescaledb:latest-pg16`. Playwright (E2E) y `npm run gen:api` llegarán en las fases 4 y 1, respectivamente.
 
 ---
 

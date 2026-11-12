@@ -24,13 +24,13 @@ trading_desk/
 | Estado | Zustand (estado del terminal) + TanStack Query (estado del servidor) | — |
 | Tiempo real | WebSocket nativo (ticks/alertas) + SSE (stream de agentes) | — |
 | Tipos de contrato | **`openapi-typescript`**, generado desde el `openapi.json` de FastAPI | Prohibido escribir tipos de API a mano. |
-| Gestor de paquetes | npm | Node.js 20+. |
+| Gestor de paquetes | npm | Node.js 22+ (LTS; Vitest 5 lo exige). |
 
 ## 3. Backend
 
 | Área | Elección | Notas |
 | :--- | :--- | :--- |
-| Lenguaje | Python 3.11+ | — |
+| Lenguaje | Python 3.12 | Fijado en `backend/.python-version` y gestionado por uv. |
 | Gestor de entorno | **uv** (`pyproject.toml` + `uv.lock`) | Sustituye a `requirements.txt` del README. |
 | API | FastAPI + Uvicorn (ASGI) + Pydantic v2 | Prefijo `/api/v1`. REST, SSE y WebSocket. |
 | Configuración | `pydantic-settings` + `.env` | Secretos: `ANTHROPIC_API_KEY`, `OANDA_API_TOKEN`, `OANDA_ACCOUNT_ID`, `DATABASE_URL`. |
@@ -69,7 +69,7 @@ Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que 
 
 | Área | Elección | Notas |
 | :--- | :--- | :--- |
-| Motor | **PostgreSQL 16+**, local y nativo (puerto 5432) | Sin Docker en el MVP. |
+| Motor | **PostgreSQL 16**, local y nativo (puerto **5432**) | Sin Docker en local; en CI, *service* `timescale/timescaledb:latest-pg16`. Rol, BDs y extensiones con `backend/scripts/setup_db.sh`. |
 | Series temporales | **TimescaleDB**: `ohlcv_bars` como hypertable | Compresión y agregados continuos, opcionales después del MVP. |
 | Auditoría | Columnas JSONB en `agent_analyses` | Solo inserción: no se permiten `UPDATE` ni `DELETE`. |
 | Extensiones | `uuid-ossp`, `timescaledb` | — |
@@ -82,7 +82,7 @@ Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que 
 | Tipado | `mypy --strict` en `quant/`, `risk/` y `schemas/` | `tsc --noEmit` |
 | Unit tests | `pytest` + `pytest-asyncio`, `hypothesis` para propiedades de riesgo | **Vitest** + Testing Library |
 | Determinismo | Tests *golden* de backtests sobre datasets fijos | — |
-| E2E | — | **Playwright** (rutas críticas del terminal) |
+| E2E | — | **Playwright** (rutas críticas del terminal; se incorpora en la fase 4) |
 | CI | **GitHub Actions**: lint → typecheck → tests (con un servicio Postgres+Timescale) → comprobación de que los tipos TS generados están actualizados | — |
 
 ## 9. Carencias conocidas y decisiones aplazadas
@@ -95,3 +95,4 @@ Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que 
 ## Changelog
 
 - **2026-11-12:** versión inicial. Decisiones de la entrevista: monorepo, Claude + PydanticAI, OANDA para FX e índices, TimescaleDB, tipos generados con openapi-typescript, testing y CI.
+- **2026-11-12 (Bloque 0):** Python fijado en 3.12; Node 22+ (Vitest 5); PostgreSQL 16 local en el puerto 5432 (el PG14 pasa al 5433, apagado); CI con *service* Timescale; Playwright aplazado a la fase 4.
