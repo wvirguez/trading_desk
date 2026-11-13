@@ -22,7 +22,7 @@ Regla de cada grupo: **esquema → tests → implementación**, y termina en un 
 
 3.1. Modelo `app/models/strategy.py` (`Strategy`) con `CHECK` de `timeframe` (`enum_check`) y `JSONB` para `params` y `metrics`; registrarlo en `app/models/__init__.py`.
 3.2. Migración `0006_strategies` (`down_revision = "0005_yahoo_5m"`, usar el id real de la última): crea la tabla, el índice `(instrument_id, created_at DESC)` y un `downgrade` que la elimina.
-3.3. Tests `db` (`tests/db/test_schema_db.py`): `upgrade head` crea `strategies`; `downgrade -1` y `upgrade head` funcionan; el `CHECK` rechaza un timeframe inválido; `JSONB` hace *round-trip*. Actualizar la fixture de `TRUNCATE` (D20) para incluir `strategies`.
+3.3. Tests `db` (`tests/repositories/test_strategies_repo.py`): `upgrade head` crea `strategies`; `downgrade -1` y `upgrade head` funcionan; el `CHECK` rechaza un timeframe inválido; `JSONB` hace *round-trip*. Actualizar la fixture de `TRUNCATE` (D20) para incluir `strategies`.
 3.4. `app/repositories/strategies.py`: `insert_strategy(session, ...) -> Strategy` (sin `commit`, como D21).
 3.5. `app/repositories/ohlcv.py`: `fetch_range(session, instrument_id, timeframe, symbol, start, end, limit) -> list[CandleSchema]`, ascendente por `ts`; test `db` con rangos abiertos y cerrados y con el tope.
 3.6. Commit: `Feat: modelo strategies y consulta de rango OHLCV`.
@@ -60,7 +60,7 @@ Cada subgrupo es un commit independiente. En todos: tests primero, funciones pur
 
 ### 4E. Position sizing, Kelly y riesgo de ruina (2.5, 2.6)
 
-4E.1. Tests `example-based` en `tests/risk/test_sizing.py` con los 4 instrumentos del seed (tick y lote reales): p. ej. EUR/USD, equity 10 000, 1 %, entrada 1.08500, stop 1.08300 → 500 000 unidades; BTC/USDT con lote 0.00001; caso `SIZE_BELOW_LOT`; distancia `0` o stop del lado equivocado → `ValueError` en español.
+4E.1. Tests `example-based` en `tests/risk/test_sizing.py` con los 4 instrumentos del seed (tick y lote reales): p. ej. EUR/USD, equity 10 000, 1 %, entrada 1.08500, stop 1.08300 → 50 000 unidades; BTC/USDT con lote 0.00001; caso `SIZE_BELOW_LOT`; distancia `0` o stop del lado equivocado → `ValueError` en español.
 4E.2. Tests `hypothesis` (`tests/risk/test_sizing_props.py`): para cualquier `equity > 0`, `risk_pct ∈ (0, 1]`, entrada y stop válidos, tick y lote: **`risk_amount_real ≤ equity · risk_pct`**; `units` es múltiplo de `lot_size`; `units ≥ 0`; más distancia nunca da más unidades.
 4E.3. `app/risk/sizing.py`: `position_size(equity, risk_pct, entry, stop, instrument) -> PositionSizeResult` (D60).
 4E.4. Tests de `tests/risk/test_kelly.py`: valores conocidos (`p=0.6, b=1` → `f*=0.2`; `p=0.5, b=1` → 0); `fraction ≤ cap`; propiedades hypothesis (`0 ≤ fraction ≤ cap`; riesgo de ruina en `[0, 1]`, no decreciente al subir `risk_pct`, no creciente al subir `p`); `ValueError` con `p=1.2` o `b ≤ 0`.

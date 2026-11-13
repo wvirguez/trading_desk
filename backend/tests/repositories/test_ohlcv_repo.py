@@ -75,3 +75,50 @@ async def test_latest_ts_y_fetch_latest(db_session: AsyncSession) -> None:
     assert await repo.latest_ts(db_session, iid, Timeframe.D1) is None
     latest = await repo.fetch_latest(db_session, iid, Timeframe.H1, 3, "BTC/USDT")
     assert [c.ts for c in latest] == [T0 + timedelta(hours=h) for h in (7, 8, 9)]
+
+
+async def test_fetch_range_abierto_y_cerrado(db_session: AsyncSession) -> None:
+    iid = await _btc_id(db_session)
+    await repo.upsert_candles(db_session, iid, _candles(10))
+    tf, sym = Timeframe.H1, "BTC/USDT"
+
+    todas = await repo.fetch_range(db_session, iid, tf, sym, None, None, 100)
+    assert [c.ts for c in todas] == [T0 + timedelta(hours=i) for i in range(10)]
+
+    desde = await repo.fetch_range(db_session, iid, tf, sym, T0 + timedelta(hours=7), None, 100)
+    assert [c.ts.hour for c in desde] == [7, 8, 9]
+
+    hasta = await repo.fetch_range(db_session, iid, tf, sym, None, T0 + timedelta(hours=3), 100)
+    assert [c.ts.hour for c in hasta] == [0, 1, 2]  # end exclusivo
+
+    cerrado = await repo.fetch_range(
+        db_session, iid, tf, sym, T0 + timedelta(hours=2), T0 + timedelta(hours=5), 100
+    )
+    assert [c.ts.hour for c in cerrado] == [2, 3, 4]  # start inclusivo, end exclusivo
+    assert cerrado[0].symbol == sym
+
+    vacio = await repo.fetch_range(db_session, iid, tf, sym, T0 + timedelta(days=5), None, 100)
+    assert vacio == []
+
+
+async def test_fetch_range_limit_conserva_las_ultimas_en_orden(db_session: AsyncSession) -> None:
+    iid = await _btc_id(db_session)
+    await repo.upsert_candles(db_session, iid, _candles(10))
+    tf, sym = Timeframe.H1, "BTC/USDT"
+
+    ultimas = await repo.fetch_range(db_session, iid, tf, sym, None, None, 3)
+    assert [c.ts.hour for c in ultimas] == [7, 8, 9]
+
+    recortado = await repo.fetch_range(
+        db_session, iid, tf, sym, T0 + timedelta(hours=2), T0 + timedelta(hours=6), 2
+    )
+    assert [c.ts.hour for c in recortado] == [4, 5]
+
+
+async def test_fetch_range_aisla_instrumento_y_timeframe(db_session: AsyncSession) -> None:
+    iid = await _btc_id(db_session)
+    await repo.upsert_candles(db_session, iid, _candles(3))
+    otro = await instruments_repo.get_by_symbol(db_session, "EUR/USD")
+    assert otro is not None
+    assert await repo.fetch_range(db_session, otro.id, Timeframe.H1, "EUR/USD", None, None, 9) == []
+    assert await repo.fetch_range(db_session, iid, Timeframe.D1, "BTC/USDT", None, None, 9) == []

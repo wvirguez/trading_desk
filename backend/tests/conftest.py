@@ -42,14 +42,14 @@ def use_test_db() -> None:
 
 @pytest.fixture
 async def db_session() -> AsyncIterator[AsyncSession]:
-    """Sesión contra TEST_DATABASE_URL con `ohlcv_bars` y `trade_signals` vacías (D20).
+    """Sesión a TEST_DATABASE_URL con `ohlcv_bars`, `trade_signals`, `strategies` vacías (D20).
 
     `instruments` se conserva: sus filas vienen de la migración de seed.
     """
     engine = build_engine(get_settings().test_database_url)
     try:
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
-            await session.execute(text("TRUNCATE ohlcv_bars, trade_signals"))
+            await session.execute(text("TRUNCATE ohlcv_bars, trade_signals, strategies"))
             await session.commit()
             yield session
             await session.rollback()

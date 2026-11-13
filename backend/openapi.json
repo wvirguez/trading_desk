@@ -1,6 +1,223 @@
 {
   "components": {
     "schemas": {
+      "BacktestConfig-Input": {
+        "properties": {
+          "allow_short": {
+            "default": true,
+            "title": "Allow Short",
+            "type": "boolean"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "entry_z": {
+            "default": 2.0,
+            "title": "Entry Z",
+            "type": "number"
+          },
+          "exit_z": {
+            "default": 0.0,
+            "title": "Exit Z",
+            "type": "number"
+          },
+          "initial_capital": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "default": "10000",
+            "title": "Initial Capital"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "zscore_window": {
+            "default": 50,
+            "maximum": 500.0,
+            "minimum": 10.0,
+            "title": "Zscore Window",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol",
+          "timeframe"
+        ],
+        "title": "BacktestConfig",
+        "type": "object"
+      },
+      "BacktestConfig-Output": {
+        "properties": {
+          "allow_short": {
+            "default": true,
+            "title": "Allow Short",
+            "type": "boolean"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "entry_z": {
+            "default": 2.0,
+            "title": "Entry Z",
+            "type": "number"
+          },
+          "exit_z": {
+            "default": 0.0,
+            "title": "Exit Z",
+            "type": "number"
+          },
+          "initial_capital": {
+            "default": "10000",
+            "title": "Initial Capital",
+            "type": "string"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "zscore_window": {
+            "default": 50,
+            "maximum": 500.0,
+            "minimum": 10.0,
+            "title": "Zscore Window",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol",
+          "timeframe"
+        ],
+        "title": "BacktestConfig",
+        "type": "object"
+      },
+      "BacktestMetricsSchema": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/BacktestConfig-Output"
+          },
+          "equity_curve": {
+            "items": {
+              "$ref": "#/components/schemas/EquityPoint"
+            },
+            "title": "Equity Curve",
+            "type": "array"
+          },
+          "expectancy": {
+            "title": "Expectancy",
+            "type": "number"
+          },
+          "final_equity": {
+            "title": "Final Equity",
+            "type": "string"
+          },
+          "max_drawdown": {
+            "title": "Max Drawdown",
+            "type": "number"
+          },
+          "n_bars": {
+            "title": "N Bars",
+            "type": "integer"
+          },
+          "n_trades": {
+            "title": "N Trades",
+            "type": "integer"
+          },
+          "sharpe": {
+            "title": "Sharpe",
+            "type": "number"
+          },
+          "strategy_id": {
+            "format": "uuid",
+            "title": "Strategy Id",
+            "type": "string"
+          },
+          "total_return": {
+            "title": "Total Return",
+            "type": "number"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "win_rate": {
+            "title": "Win Rate",
+            "type": "number"
+          }
+        },
+        "required": [
+          "strategy_id",
+          "config",
+          "n_bars",
+          "n_trades",
+          "total_return",
+          "sharpe",
+          "max_drawdown",
+          "win_rate",
+          "expectancy",
+          "final_equity",
+          "equity_curve",
+          "warnings"
+        ],
+        "title": "BacktestMetricsSchema",
+        "type": "object"
+      },
       "CandleSchema": {
         "properties": {
           "close": {
@@ -47,6 +264,25 @@
           "volume"
         ],
         "title": "CandleSchema",
+        "type": "object"
+      },
+      "EquityPoint": {
+        "properties": {
+          "equity": {
+            "title": "Equity",
+            "type": "string"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ts",
+          "equity"
+        ],
+        "title": "EquityPoint",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -272,6 +508,43 @@
         "summary": "Get Ohlcv",
         "tags": [
           "market"
+        ]
+      }
+    },
+    "/api/v1/quant/backtest": {
+      "post": {
+        "operationId": "post_backtest_api_v1_quant_backtest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BacktestConfig-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestMetricsSchema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Instrumento desconocido"
+          },
+          "422": {
+            "description": "Configuración inválida o datos insuficientes/excesivos"
+          }
+        },
+        "summary": "Post Backtest",
+        "tags": [
+          "quant"
         ]
       }
     }

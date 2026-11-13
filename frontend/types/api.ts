@@ -38,10 +38,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quant/backtest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Backtest */
+        post: operations["post_backtest_api_v1_quant_backtest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BacktestConfig */
+        "BacktestConfig-Input": {
+            /**
+             * Allow Short
+             * @default true
+             */
+            allow_short: boolean;
+            /** End */
+            end?: string | null;
+            /**
+             * Entry Z
+             * @default 2
+             */
+            entry_z: number;
+            /**
+             * Exit Z
+             * @default 0
+             */
+            exit_z: number;
+            /**
+             * Initial Capital
+             * @default 10000
+             */
+            initial_capital: number | string;
+            /** Start */
+            start?: string | null;
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /**
+             * Zscore Window
+             * @default 50
+             */
+            zscore_window: number;
+        };
+        /** BacktestConfig */
+        "BacktestConfig-Output": {
+            /**
+             * Allow Short
+             * @default true
+             */
+            allow_short: boolean;
+            /** End */
+            end?: string | null;
+            /**
+             * Entry Z
+             * @default 2
+             */
+            entry_z: number;
+            /**
+             * Exit Z
+             * @default 0
+             */
+            exit_z: number;
+            /**
+             * Initial Capital
+             * @default 10000
+             */
+            initial_capital: string;
+            /** Start */
+            start?: string | null;
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /**
+             * Zscore Window
+             * @default 50
+             */
+            zscore_window: number;
+        };
+        /** BacktestMetricsSchema */
+        BacktestMetricsSchema: {
+            config: components["schemas"]["BacktestConfig-Output"];
+            /** Equity Curve */
+            equity_curve: components["schemas"]["EquityPoint"][];
+            /** Expectancy */
+            expectancy: number;
+            /** Final Equity */
+            final_equity: string;
+            /** Max Drawdown */
+            max_drawdown: number;
+            /** N Bars */
+            n_bars: number;
+            /** N Trades */
+            n_trades: number;
+            /** Sharpe */
+            sharpe: number;
+            /**
+             * Strategy Id
+             * Format: uuid
+             */
+            strategy_id: string;
+            /** Total Return */
+            total_return: number;
+            /** Warnings */
+            warnings: string[];
+            /** Win Rate */
+            win_rate: number;
+        };
         /** CandleSchema */
         CandleSchema: {
             /** Close */
@@ -62,6 +178,16 @@ export interface components {
             ts: string;
             /** Volume */
             volume: string;
+        };
+        /** EquityPoint */
+        EquityPoint: {
+            /** Equity */
+            equity: string;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -189,6 +315,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    post_backtest_api_v1_quant_backtest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BacktestConfig-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacktestMetricsSchema"];
+                };
+            };
+            /** @description Instrumento desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Configuración inválida o datos insuficientes/excesivos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

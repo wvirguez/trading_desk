@@ -1,0 +1,67 @@
+{
+  "description": "Igual que fvg_alcista_sin_mitigar pero la vela 5 tiene low 11, exactamente el borde superior de la zona [10, 11]: tocar el borde cuenta como entrar (rango inclusivo) -> mitigated_at = vela 5. Las velas 3 y 4 (low 12, 13) no entran. n=3, 6 velas: sin swings.",
+  "n": 3,
+  "candles": [
+    {
+      "ts": "2026-01-01T00:00:00Z",
+      "open": 9.5,
+      "high": 10,
+      "low": 9,
+      "close": 9.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T01:00:00Z",
+      "open": 12.5,
+      "high": 13,
+      "low": 10,
+      "close": 12.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T02:00:00Z",
+      "open": 13.5,
+      "high": 14,
+      "low": 11,
+      "close": 13.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T03:00:00Z",
+      "open": 13,
+      "high": 14,
+      "low": 12,
+      "close": 13,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T04:00:00Z",
+      "open": 14,
+      "high": 15,
+      "low": 13,
+      "close": 14,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T05:00:00Z",
+      "open": 14.5,
+      "high": 15,
+      "low": 11,
+      "close": 14.5,
+      "volume": 1
+    }
+  ],
+  "expected": {
+    "swings": [],
+    "events": [],
+    "fvgs": [
+      {
+        "ts": "2026-01-01T01:00:00Z",
+        "direction": "LONG",
+        "low": "10",
+        "high": "11",
+        "mitigated_at": "2026-01-01T05:00:00Z"
+      }
+    ]
+  }
+}

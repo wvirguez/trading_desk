@@ -93,3 +93,43 @@ async def fetch_latest(
         )
         for bar in reversed(bars)
     ]
+
+
+async def fetch_range(
+    session: AsyncSession,
+    instrument_id: int,
+    timeframe: Timeframe,
+    symbol: str,
+    start: datetime | None,
+    end: datetime | None,
+    limit: int,
+) -> list[CandleSchema]:
+    """Velas del rango `[start, end)` en orden ascendente de `ts`.
+
+    `start` es inclusivo y `end` exclusivo; cualquiera de los dos puede ser `None` (abierto).
+    Si el rango tiene más de `limit` velas se conservan las ÚLTIMAS `limit` (las más recientes),
+    también en orden ascendente: para un backtest interesa el final de la serie, y quien llama
+    detecta el recorte pidiendo `limit + 1`.
+    """
+    stmt = select(OhlcvBar).where(
+        OhlcvBar.instrument_id == instrument_id, OhlcvBar.timeframe == timeframe.value
+    )
+    if start is not None:
+        stmt = stmt.where(OhlcvBar.ts >= start)
+    if end is not None:
+        stmt = stmt.where(OhlcvBar.ts < end)
+    stmt = stmt.order_by(OhlcvBar.ts.desc()).limit(limit)
+    bars = (await session.execute(stmt)).scalars().all()
+    return [
+        CandleSchema(
+            symbol=symbol,
+            timeframe=timeframe,
+            ts=bar.ts,
+            open=bar.open,
+            high=bar.high,
+            low=bar.low,
+            close=bar.close,
+            volume=bar.volume,
+        )
+        for bar in reversed(bars)
+    ]

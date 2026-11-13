@@ -19,7 +19,7 @@
 | Swings, BOS, CHoCH y FVG (alcista/bajista, mitigado y no) coinciden exactamente con los fixtures; un swing se confirma `n` velas después. | `tests/quant/test_structure.py` |
 | El clasificador devuelve `TRENDING`, `MEAN_REVERTING` y `HIGH_VOLATILITY_NOISE` en las series sintéticas correspondientes; `n_obs < min_obs` lanza `ValueError`. | `tests/quant/test_regime.py` |
 | **El riesgo real de `position_size` nunca supera `equity · risk_pct`**, `units` es múltiplo de `lot_size` y la distancia se redondea al alza al tick (propiedad). | `tests/risk/test_sizing_props.py` |
-| `units < lot_size` → 0 unidades y `SIZE_BELOW_LOT`; stop del lado equivocado → `ValueError`. | `tests/risk/test_sizing.py` |
+| `units < lot_size` → 0 unidades (las guardas emiten `SIZE_BELOW_LOT`); entrada igual al stop o valores ≤ 0 → `ValueError`; el sizing usa `|entry − stop|` (no conoce la dirección), y el **stop del lado equivocado lo veta `INVALID_LEVELS`** en las guardas (D76). Hay tests con los 4 instrumentos del seed. | `tests/risk/test_sizing.py`, `tests/risk/test_guards.py` |
 | Kelly: `p=0,6, b=1` → 0,2; `p=0,5, b=1` → 0; `0 ≤ fracción ≤ cap`; riesgo de ruina en [0, 1], monótono en `risk_pct` y en `p`; entradas inválidas → `ValueError`. | `tests/risk/test_kelly.py` |
 | La correlación de series idénticas es 1,0 y la de opuestas −1,0; usa solo las últimas `window` velas comunes; con < 20 comunes devuelve `nan` y las guardas lo tratan como 1,0. | `tests/risk/test_correlation.py`, `test_guards.py` |
 | **R:R 1,79 → veto `RR_BELOW_MIN`; R:R 1,8 → aprobado.** Pérdida diaria de −3 % → `DAILY_LOSS_LIMIT`; −2,99 % → aprobado. | `tests/risk/test_guards.py` |
@@ -27,7 +27,7 @@
 | **Ninguna decisión aprobada incumple** riesgo por operación, R:R mínimo ni límite de pérdida diaria (propiedad). | `tests/risk/test_guards_props.py` |
 | El backtester aplica la posición con `shift(1)` (sin *look-ahead*); sin señales → capital constante y `n_trades = 0`; `max_drawdown ≤ 0`; `sharpe = 0.0` si `std = 0`. | `tests/quant/test_backtest.py` |
 | **Golden:** para cada dataset versionado, las métricas coinciden exactamente con `expected/*.json`, y dos ejecuciones seguidas dan lo mismo y el mismo `config_hash`. | `tests/golden/test_backtest_golden.py` |
-| `strategies` existe tras `upgrade head`, `downgrade`/`upgrade` funcionan y `JSONB` hace *round-trip*. | `tests/db/test_schema_db.py` |
+| `strategies` existe tras `upgrade head`, `downgrade`/`upgrade` funcionan, el `CHECK` rechaza un timeframe inválido y `JSONB` hace *round-trip*. | `tests/repositories/test_strategies_repo.py` |
 | El servicio persiste una fila por backtest y el resultado coincide con el de la función pura. | `tests/services/test_backtest_service.py` |
 | `POST /quant/backtest`: 200 con esquema completo; 404 con símbolo desconocido; 422 con `exit_z ≥ entry_z`; 422 con datos insuficientes (mensaje con las cantidades). | `tests/api/test_quant.py` |
 | `Settings` rechaza `RISK_PER_TRADE_PCT=0` y `MIN_RR=0.5`. | `tests/test_config.py` |

@@ -67,3 +67,29 @@ class SessionType(StrEnum):
     CRYPTO_24_7 = "CRYPTO_24_7"
     FX_24_5 = "FX_24_5"
     INDEX_CFD = "INDEX_CFD"
+
+
+class RegimeLabel(StrEnum):
+    MEAN_REVERTING = "MEAN_REVERTING"
+    TRENDING = "TRENDING"
+    HIGH_VOLATILITY_NOISE = "HIGH_VOLATILITY_NOISE"
+
+
+class StructureEventType(StrEnum):
+    BOS = "BOS"
+    CHOCH = "CHOCH"
+
+
+class SwingKind(StrEnum):
+    HIGH = "HIGH"
+    LOW = "LOW"
+
+
+class VetoReason(StrEnum):
+    RR_BELOW_MIN = "RR_BELOW_MIN"
+    RISK_PER_TRADE_EXCEEDED = "RISK_PER_TRADE_EXCEEDED"
+    DAILY_LOSS_LIMIT = "DAILY_LOSS_LIMIT"
+    OPEN_RISK_LIMIT = "OPEN_RISK_LIMIT"
+    CORRELATED_RISK_LIMIT = "CORRELATED_RISK_LIMIT"
+    SIZE_BELOW_LOT = "SIZE_BELOW_LOT"
+    INVALID_LEVELS = "INVALID_LEVELS"

@@ -269,6 +269,49 @@ curl "localhost:8000/api/v1/market/ohlcv?symbol=BTC%2FUSDT&tf=1h&limit=500"
 > - **La historia propia crece con la ingesta:** la base de datos conserva lo ya guardado, así que ejecutar `incremental` con frecuencia acumula más historia de `5m`/`15m` que la ventana de Yahoo.
 - Tras cambiar esquemas o endpoints: `cd backend && uv run python scripts/export_openapi.py` y `cd frontend && npm run gen:api`; versiona `openapi.json` y `types/api.ts`.
 
+### Motor cuantitativo (Fase 2)
+
+> **Aviso: el backtest NO incluye costes ni *slippage*.** Las métricas (Sharpe, retorno, drawdown) son **optimistas** respecto a la operativa real. Además, los datos de **FX, XAU y NAS100 son provisionales de Yahoo** (no oficiales; véase el aviso anterior). La estrategia de referencia (reversión a la media por z-score, exposición fija 1×, sin stops) es solo un arnés de validación del motor, no una recomendación.
+
+- `backend/app/quant/`: funciones puras sobre `polars` (`data`, `features`, `regime_stats` con Hurst/ADF, `structure` con swings/BOS/CHoCH/FVG, `regime`, `backtest`). Sin I/O ni imports de FastAPI/SQLAlchemy.
+- `backend/app/risk/`: Python puro en `Decimal` (`sizing`, `kelly`, `guards`, `correlation`). Las guardas acumulan todos los vetos con mensajes en español.
+- El I/O vive en `app/services/backtest.py` y `app/api/v1/quant.py`; cada backtest correcto guarda una fila en la tabla `strategies`.
+
+Ejecutar un backtest (requiere velas ya ingeridas en `ohlcv_bars`):
+
+```bash
+curl -X POST http://localhost:8000/api/v1/quant/backtest \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "EUR/USD", "timeframe": "1h", "initial_capital": "10000",
+       "zscore_window": 50, "entry_z": 2.0, "exit_z": 0.0, "allow_short": true}'
+```
+
+`404` si el símbolo no existe; `422` si los parámetros son inválidos o hay datos insuficientes (menos de `zscore_window + 2` velas) o excesivos (más de `BACKTEST_MAX_BARS`). `start` y `end` (UTC) son opcionales.
+
+Variables de entorno (todas opcionales; valores por defecto, también en `backend/.env.example`; los porcentajes están en unidades de porcentaje, `1.0` = 1 %):
+
+| Variable | Defecto | Significado |
+| :--- | :--- | :--- |
+| `RISK_PER_TRADE_PCT` | `1.0` | Riesgo máximo por operación |
+| `MAX_DAILY_LOSS_PCT` | `3.0` | Pérdida diaria máxima |
+| `MIN_RR` | `1.8` | R:R mínimo; por debajo, veto |
+| `KELLY_FRACTION` | `0.25` | Fracción de Kelly aplicada |
+| `MAX_OPEN_RISK_PCT` | `3.0` | Riesgo abierto total máximo |
+| `MAX_CORRELATED_RISK_PCT` | `2.0` | Riesgo máximo en posiciones correlacionadas del mismo sentido |
+| `CORRELATION_WINDOW` | `100` | Velas comunes para la matriz de correlación |
+| `CORRELATION_THRESHOLD` | `0.7` | \|ρ\| a partir del cual dos posiciones cuentan como correlacionadas |
+| `BACKTEST_MAX_BARS` | `50000` | Tope de velas por backtest |
+
+Tests *golden* (3 datasets sintéticos de 1 500 velas, comparación exacta de métricas y SHA-256 de la curva de capital):
+
+```bash
+cd backend
+uv run pytest tests/golden                         # verificar
+uv run python scripts/make_golden.py --update      # regenerar: solo con revisión humana del diff
+```
+
+Si un golden falla, no lo regeneres sin entender por qué cambió el número: es la alarma de que el determinismo se rompió.
+
 ### 4. Frontend (Next.js)
 
 ```bash

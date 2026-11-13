@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 import pytest
+from pydantic import ValidationError
 
 from app.core.config import Settings
 
@@ -69,3 +72,66 @@ def test_oanda_token_is_not_exposed_in_repr(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.oanda_api_token.get_secret_value() == "token-super-secreto"
     assert "token-super-secreto" not in repr(settings)
     assert "token-super-secreto" not in str(settings)
+
+
+_RISK_VARS = (
+    "RISK_PER_TRADE_PCT",
+    "MAX_DAILY_LOSS_PCT",
+    "MIN_RR",
+    "KELLY_FRACTION",
+    "MAX_OPEN_RISK_PCT",
+    "MAX_CORRELATED_RISK_PCT",
+    "CORRELATION_WINDOW",
+    "CORRELATION_THRESHOLD",
+    "BACKTEST_MAX_BARS",
+)
+
+
+def test_risk_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _RISK_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.risk_per_trade_pct == Decimal("1.0")
+    assert settings.max_daily_loss_pct == Decimal("3.0")
+    assert settings.min_rr == Decimal("1.8")
+    assert settings.kelly_fraction == Decimal("0.25")
+    assert settings.max_open_risk_pct == Decimal("3.0")
+    assert settings.max_correlated_risk_pct == Decimal("2.0")
+    assert settings.correlation_window == 100
+    assert settings.correlation_threshold == Decimal("0.7")
+    assert settings.backtest_max_bars == 50000
+    assert isinstance(settings.risk_per_trade_pct, Decimal)
+
+
+def test_risk_vars_are_overridable_by_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RISK_PER_TRADE_PCT", "0.5")
+    monkeypatch.setenv("MIN_RR", "2")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.risk_per_trade_pct == Decimal("0.5")
+    assert settings.min_rr == Decimal("2")
+
+
+@pytest.mark.parametrize(
+    ("var", "value"),
+    [
+        ("RISK_PER_TRADE_PCT", "0"),
+        ("RISK_PER_TRADE_PCT", "50"),
+        ("MIN_RR", "0.5"),
+        ("MAX_DAILY_LOSS_PCT", "0"),
+        ("KELLY_FRACTION", "1.5"),
+        ("CORRELATION_THRESHOLD", "1.2"),
+        ("CORRELATION_WINDOW", "5"),
+        ("BACKTEST_MAX_BARS", "0"),
+    ],
+)
+def test_risk_vars_reject_out_of_range(
+    monkeypatch: pytest.MonkeyPatch, var: str, value: str
+) -> None:
+    monkeypatch.setenv(var, value)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)  # type: ignore[call-arg]

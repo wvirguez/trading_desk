@@ -2,6 +2,7 @@
 
 from app.models.instrument import Instrument
 from app.models.ohlcv_bar import OhlcvBar
+from app.models.strategy import Strategy
 from app.models.trade_signal import TradeSignal
 
-__all__ = ["Instrument", "OhlcvBar", "TradeSignal"]
+__all__ = ["Instrument", "OhlcvBar", "Strategy", "TradeSignal"]

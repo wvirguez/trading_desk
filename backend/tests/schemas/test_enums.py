@@ -2,7 +2,18 @@ from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
-from app.schemas.enums import AssetClass, Direction, Provider, SessionType, SignalStatus, Timeframe
+from app.schemas.enums import (
+    AssetClass,
+    Direction,
+    Provider,
+    RegimeLabel,
+    SessionType,
+    SignalStatus,
+    StructureEventType,
+    SwingKind,
+    Timeframe,
+    VetoReason,
+)
 
 
 def test_valores_de_enums_segun_la_spec() -> None:
@@ -53,3 +64,22 @@ def test_floor_convierte_a_utc() -> None:
 def test_floor_rechaza_naive() -> None:
     with pytest.raises(ValueError, match="zona horaria"):
         Timeframe.H1.floor(datetime(2024, 1, 1, 0, 0))
+
+
+def test_valores_de_enums_de_fase_2() -> None:
+    assert [m.value for m in RegimeLabel] == [
+        "MEAN_REVERTING",
+        "TRENDING",
+        "HIGH_VOLATILITY_NOISE",
+    ]
+    assert [m.value for m in StructureEventType] == ["BOS", "CHOCH"]
+    assert [m.value for m in SwingKind] == ["HIGH", "LOW"]
+    assert [m.value for m in VetoReason] == [
+        "RR_BELOW_MIN",
+        "RISK_PER_TRADE_EXCEEDED",
+        "DAILY_LOSS_LIMIT",
+        "OPEN_RISK_LIMIT",
+        "CORRELATED_RISK_LIMIT",
+        "SIZE_BELOW_LOT",
+        "INVALID_LEVELS",
+    ]

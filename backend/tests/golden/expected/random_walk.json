@@ -1,0 +1,12 @@
+{
+  "config_hash": "c28c2f80646b69bcd97145c6eb28797222c0607af65f32dccbb5496bd41c2fa0",
+  "equity_curve_sha256": "86e793b87842590d2bf89dc1edc56f63ff30a2526068335fb74ff85009e54bfe",
+  "expectancy": 0.000256775,
+  "final_equity": "10065.1181642248",
+  "max_drawdown": -0.0244077037,
+  "n_bars": 1500,
+  "n_trades": 26,
+  "sharpe": 0.5400628548,
+  "total_return": 0.0065118164,
+  "win_rate": 0.5769230769
+}

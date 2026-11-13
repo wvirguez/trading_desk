@@ -1,0 +1,67 @@
+{
+  "description": "n=3, 6 velas (sin swings). FVG bajista centrado en la vela 1: high[2]=16 < low[0]=18, zona [16, 18]. Las velas 3-5 tienen high 15, 14, 15 < 16: nunca llegan a la zona -> sin mitigar. Igualdades como high[3]=15 vs low[1]=15 no son FVG (desigualdad estricta).",
+  "n": 3,
+  "candles": [
+    {
+      "ts": "2026-01-01T00:00:00Z",
+      "open": 18.5,
+      "high": 20,
+      "low": 18,
+      "close": 18.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T01:00:00Z",
+      "open": 15.5,
+      "high": 19,
+      "low": 15,
+      "close": 15.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T02:00:00Z",
+      "open": 14.5,
+      "high": 16,
+      "low": 14,
+      "close": 14.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T03:00:00Z",
+      "open": 14,
+      "high": 15,
+      "low": 13,
+      "close": 14,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T04:00:00Z",
+      "open": 13,
+      "high": 14,
+      "low": 12,
+      "close": 13,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T05:00:00Z",
+      "open": 13.5,
+      "high": 15,
+      "low": 12,
+      "close": 13.5,
+      "volume": 1
+    }
+  ],
+  "expected": {
+    "swings": [],
+    "events": [],
+    "fvgs": [
+      {
+        "ts": "2026-01-01T01:00:00Z",
+        "direction": "SHORT",
+        "low": "16",
+        "high": "18",
+        "mitigated_at": null
+      }
+    ]
+  }
+}

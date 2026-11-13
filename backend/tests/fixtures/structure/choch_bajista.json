@@ -1,0 +1,171 @@
+{
+  "description": "n=2, 14 velas. Tendencia alcista: swing HIGH 13 (vela 2) roto por el cierre 13.5 de la vela 6 -> BOS LONG (primera ruptura). Luego swing LOW 9.5 en vela 9 (confirmado en 11); la vela 11 tiene high 12.5 igual a la 9: empate, no es swing HIGH (maximo estricto). Vela 12 cierra 9 < 9.5 en tendencia alcista -> CHOCH SHORT (el swing LOW 8 de la vela 4 NO se rompe: el ultimo swing LOW es el de la vela 9). Vela 13 cierra 8.5: el swing 9.5 ya fue roto, no hay evento. FVG bajista en vela 12: high[13]=9.5 < low[11]=11, zona [9.5, 11], sin mitigar.",
+  "n": 2,
+  "candles": [
+    {
+      "ts": "2026-01-01T00:00:00Z",
+      "open": 9,
+      "high": 10,
+      "low": 8,
+      "close": 9,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T01:00:00Z",
+      "open": 10,
+      "high": 11,
+      "low": 9,
+      "close": 10,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T02:00:00Z",
+      "open": 12,
+      "high": 13,
+      "low": 10,
+      "close": 12,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T03:00:00Z",
+      "open": 10,
+      "high": 12,
+      "low": 9,
+      "close": 10,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T04:00:00Z",
+      "open": 9,
+      "high": 11,
+      "low": 8,
+      "close": 9,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T05:00:00Z",
+      "open": 11,
+      "high": 12,
+      "low": 9,
+      "close": 11,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T06:00:00Z",
+      "open": 13.5,
+      "high": 14,
+      "low": 10,
+      "close": 13.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T07:00:00Z",
+      "open": 12.5,
+      "high": 13.5,
+      "low": 11,
+      "close": 12.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T08:00:00Z",
+      "open": 12,
+      "high": 13,
+      "low": 11,
+      "close": 12,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T09:00:00Z",
+      "open": 10,
+      "high": 12.5,
+      "low": 9.5,
+      "close": 10,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T10:00:00Z",
+      "open": 11.5,
+      "high": 12,
+      "low": 10.5,
+      "close": 11.5,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T11:00:00Z",
+      "open": 12,
+      "high": 12.5,
+      "low": 11,
+      "close": 12,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T12:00:00Z",
+      "open": 9,
+      "high": 11,
+      "low": 8.5,
+      "close": 9,
+      "volume": 1
+    },
+    {
+      "ts": "2026-01-01T13:00:00Z",
+      "open": 8.5,
+      "high": 9.5,
+      "low": 8.2,
+      "close": 8.5,
+      "volume": 1
+    }
+  ],
+  "expected": {
+    "swings": [
+      {
+        "ts": "2026-01-01T02:00:00Z",
+        "kind": "HIGH",
+        "price": "13",
+        "confirmed_at": "2026-01-01T04:00:00Z"
+      },
+      {
+        "ts": "2026-01-01T04:00:00Z",
+        "kind": "LOW",
+        "price": "8",
+        "confirmed_at": "2026-01-01T06:00:00Z"
+      },
+      {
+        "ts": "2026-01-01T06:00:00Z",
+        "kind": "HIGH",
+        "price": "14",
+        "confirmed_at": "2026-01-01T08:00:00Z"
+      },
+      {
+        "ts": "2026-01-01T09:00:00Z",
+        "kind": "LOW",
+        "price": "9.5",
+        "confirmed_at": "2026-01-01T11:00:00Z"
+      }
+    ],
+    "events": [
+      {
+        "ts": "2026-01-01T06:00:00Z",
+        "type": "BOS",
+        "direction": "LONG",
+        "broken_swing_ts": "2026-01-01T02:00:00Z",
+        "level": "13"
+      },
+      {
+        "ts": "2026-01-01T12:00:00Z",
+        "type": "CHOCH",
+        "direction": "SHORT",
+        "broken_swing_ts": "2026-01-01T09:00:00Z",
+        "level": "9.5"
+      }
+    ],
+    "fvgs": [
+      {
+        "ts": "2026-01-01T12:00:00Z",
+        "direction": "SHORT",
+        "low": "9.5",
+        "high": "11",
+        "mitigated_at": null
+      }
+    ]
+  }
+}
