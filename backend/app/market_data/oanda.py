@@ -132,8 +132,6 @@ class OandaAdapter:
                     )
                     continue
                 by_ts[ts] = self._to_candle(instrument, timeframe, ts, item)
-            if last_ts + step <= cursor:
-                break  # sin avance
             cursor = last_ts + step
         return [by_ts[k] for k in sorted(by_ts)]
 
