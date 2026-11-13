@@ -14,9 +14,11 @@ class AssetClass(StrEnum):
 class Provider(StrEnum):
     BINANCE = "BINANCE"
     OANDA = "OANDA"
+    YAHOO = "YAHOO"
 
 
 class Timeframe(StrEnum):
+    M5 = "5m"
     M15 = "15m"
     H1 = "1h"
     H4 = "4h"
@@ -41,6 +43,7 @@ class Timeframe(StrEnum):
 
 
 _DURATIONS: dict[Timeframe, timedelta] = {
+    Timeframe.M5: timedelta(minutes=5),
     Timeframe.M15: timedelta(minutes=15),
     Timeframe.H1: timedelta(hours=1),
     Timeframe.H4: timedelta(hours=4),

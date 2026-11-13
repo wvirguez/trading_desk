@@ -14,6 +14,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.1.8",
     "structlog>=26.1.0",
     "uvicorn[standard]>=0.54.0",
+    "yfinance>=1.7.0",
 ]
 
 [build-system]
@@ -45,6 +46,11 @@ plugins = ["pydantic.mypy"]
 # ccxt no publica py.typed ni stubs.
 [[tool.mypy.overrides]]
 module = ["ccxt", "ccxt.*"]
+ignore_missing_imports = true
+
+# yfinance no publica tipos completos (D28) y pandas no trae stubs; ambos quedan confinados a yahoo.py.
+[[tool.mypy.overrides]]
+module = ["yfinance", "yfinance.*", "pandas", "pandas.*"]
 ignore_missing_imports = true
 
 # ---------- Pytest ----------

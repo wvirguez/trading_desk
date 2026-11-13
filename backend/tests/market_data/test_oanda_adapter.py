@@ -72,7 +72,13 @@ async def test_construye_url_y_parametros(eurusd: InstrumentSchema) -> None:
 
 @pytest.mark.parametrize(
     ("granularity", "tf"),
-    [("M15", Timeframe.M15), ("H1", Timeframe.H1), ("H4", Timeframe.H4), ("D", Timeframe.D1)],
+    [
+        ("M5", Timeframe.M5),
+        ("M15", Timeframe.M15),
+        ("H1", Timeframe.H1),
+        ("H4", Timeframe.H4),
+        ("D", Timeframe.D1),
+    ],
 )
 async def test_mapea_granularidad(
     granularity: str, tf: Timeframe, eurusd: InstrumentSchema

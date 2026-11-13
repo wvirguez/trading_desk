@@ -22,11 +22,18 @@ class Settings(BaseSettings):
     oanda_account_id: str | None = None
     oanda_base_url: str = "https://api-fxpractice.oanda.com"
 
-    # Horizontes de backfill por defecto (D17).
+    # Horizontes de backfill por defecto (D17). Binance y demás proveedores.
+    backfill_days_5m: int = 90
     backfill_days_15m: int = 365
     backfill_years_1h: int = 5
     backfill_years_4h: int = 5
     backfill_years_1d: int = 5
+
+    # Horizontes de Yahoo (D30): límites del proveedor, verificados el 2026-11-13.
+    backfill_days_5m_yahoo: int = 59
+    backfill_days_15m_yahoo: int = 59
+    backfill_days_1h_yahoo: int = 729
+    backfill_days_4h_yahoo: int = 729
 
 
 @lru_cache

@@ -97,7 +97,7 @@ export interface components {
          * Timeframe
          * @enum {string}
          */
-        Timeframe: "15m" | "1h" | "4h" | "1d";
+        Timeframe: "5m" | "15m" | "1h" | "4h" | "1d";
         /** ValidationError */
         ValidationError: {
             /** Context */

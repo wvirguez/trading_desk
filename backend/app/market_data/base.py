@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from app.schemas.candle import CandleSchema
 from app.schemas.enums import Provider, Timeframe
@@ -11,6 +11,14 @@ from app.schemas.instrument import InstrumentSchema
 
 class MarketDataError(Exception):
     """Fallo al obtener o interpretar datos de un proveedor (mensaje en español)."""
+
+
+class UnsupportedTimeframeError(MarketDataError):
+    """El proveedor no puede entregar ese timeframe para ese instrumento (D48).
+
+    No es un fallo transitorio: la CLI la omite con un aviso en `--all` y la trata como
+    error si la combinación se pidió de forma explícita.
+    """
 
 
 class MarketDataAdapter(Protocol):
@@ -30,6 +38,24 @@ class MarketDataAdapter(Protocol):
         start: datetime,
         end: datetime,
     ) -> list[CandleSchema]: ...
+
+
+class NoticeLike(Protocol):
+    """Aviso del adaptador: `message` es el texto listo para la CLI (en español)."""
+
+    @property
+    def message(self) -> str: ...
+
+
+@runtime_checkable
+class NoticeReporter(Protocol):
+    """Adaptador que anota avisos de la última llamada (historia recortada D30, bloques 4h
+    parciales D49). `notices` se reinicia en cada `fetch_ohlcv`; vacío = nada que avisar.
+    Los demás adaptadores no lo tienen: el servicio lo detecta con `isinstance`.
+    """
+
+    @property
+    def notices(self) -> Sequence[NoticeLike]: ...
 
 
 def utcnow() -> datetime:

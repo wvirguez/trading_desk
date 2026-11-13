@@ -44,7 +44,8 @@ end
 
 subgraph Feeds ["Datos de mercado"]
 CCXT[ccxt / Binance]
-OANDA[OANDA v20 practice]
+YAHOO[Yahoo Finance / yfinance - provisional]
+OANDA[OANDA v20 practice - aplazado]
 end
 
 subgraph Storage ["Persistencia local"]
@@ -79,7 +80,7 @@ Resumen. El detalle completo está en [`specs/tech-stack.md`](specs/tech-stack.m
 | **API del backend** | **FastAPI**, **Uvicorn**, Pydantic v2, Python 3.12 con **uv** | Endpoints async, validación estricta, SSE y WebSocket. |
 | **Capa de agentes** | **PydanticAI** + **Anthropic Claude** (`claude-sonnet-5-5` por defecto) | Salidas estructuradas y herramientas deterministas; orquestador async propio. |
 | **Núcleo cuantitativo** | `polars`, `numpy`, `scipy`, `statsmodels`, **backtester vectorizado propio** | ATR, estructura de mercado, Z-score, Hurst, ADF y métricas de backtest reproducibles. |
-| **Datos de mercado** | `ccxt` (BTC/USDT) y **OANDA v20 practice** (EUR/USD, XAU/USD, NAS100_USD) | Ingesta unificada de OHLCV normalizado en UTC. |
+| **Datos de mercado** | `ccxt` (BTC/USDT) y **Yahoo Finance vía `yfinance`** (EUR/USD, XAU/USD, NAS100; provisional). Adaptador OANDA v20 conservado, aplazado | Ingesta unificada de OHLCV normalizado en UTC (5m, 15m, 1h, 4h, 1d). |
 | **Base de datos** | **PostgreSQL 16+** local con **TimescaleDB**, SQLAlchemy 2.0 async, Alembic | Hypertable OHLCV, señales, estrategias y auditoría de agentes en JSONB. |
 | **Calidad** | ruff, mypy, pytest + hypothesis, ESLint, Vitest, Playwright, GitHub Actions | Tests de determinismo, propiedades de riesgo y E2E. |
 
@@ -171,7 +172,7 @@ trading_desk/
 │   │   ├── core/                   # Config (pydantic-settings), sesión de BD, logging (structlog)
 │   │   ├── models/                 # Modelos ORM SQLAlchemy 2.0
 │   │   ├── schemas/                # DTOs Pydantic v2 (contratos)
-│   │   ├── market_data/            # Adaptadores ccxt (Binance), OANDA v20 y fake; registro
+│   │   ├── market_data/            # Adaptadores ccxt (Binance), Yahoo, OANDA v20 y fake; registro
 │   │   ├── repositories/           # Acceso a datos: instrumentos y velas (upsert idempotente)
 │   │   ├── services/               # Servicios de aplicación (ingesta de velas)
 │   │   ├── cli/                    # CLI de ingesta: `python -m app.cli.ingest`
@@ -210,7 +211,7 @@ trading_desk/
 - [**uv**](https://docs.astral.sh/uv/) (instala y fija Python 3.12 por su cuenta)
 - Node.js **22+** con **npm**
 - **PostgreSQL 16** con **TimescaleDB 2.x**, en local en el puerto **5432**
-- *(fase 1)* Una cuenta **OANDA practice** · *(fase 3)* una clave de API de **Anthropic**
+- *(fase 3)* una clave de API de **Anthropic**
 
 ### 1. PostgreSQL 16 + TimescaleDB (Ubuntu 22.04)
 
@@ -254,7 +255,17 @@ curl "localhost:8000/api/v1/market/ohlcv?symbol=BTC%2FUSDT&tf=1h&limit=500"
 ```
 
 - `backfill` descarga el horizonte por defecto (o desde `--since`); `incremental` parte de la última vela guardada.
-- BTC/USDT usa Binance (datos públicos). EUR/USD, XAU/USD y NAS100 requieren `OANDA_API_TOKEN` y `OANDA_ACCOUNT_ID` en `.env`; la validación contra OANDA real sigue pendiente (aún no hay cuenta practice).
+- BTC/USDT usa Binance (datos públicos). EUR/USD, XAU/USD y NAS100 usan **Yahoo Finance** (sin credenciales). El adaptador de OANDA se conserva, pero ningún instrumento lo usa hoy; su validación contra una cuenta real sigue pendiente.
+- Timeframes del MVP: `5m`, `15m`, `1h`, `4h` y `1d`. En Yahoo, `4h` se construye agrupando velas de `1h` en bloques 00/04/08/12/16/20 UTC; los bloques con menos de 4 velas de `1h` (huecos de mercado) se emiten igualmente y la CLI avisa de cuántos fueron.
+
+> **Aviso: Yahoo es un proveedor provisional.** `yfinance` es una librería **no oficial**: puede romperse o ser bloqueada por Yahoo, y los términos de uso son ambiguos, así que solo es apta para **uso personal**. Sus datos no son los de un broker (OTC), por lo que los backtests no son comparables con los de otro proveedor. Limitaciones conocidas:
+>
+> - **Historia corta en intervalos cortos:** `5m` y `15m` ofrecen unos **59 días**; `1h` y `4h`, unos 729 días. Si pides más, la CLI lo dice (`aviso_ingesta`) y guarda lo disponible; no se inventan datos.
+> - **NAS100 sin `1h` ni `4h`:** Yahoo entrega las velas de 1h de `^NDX` alineadas a :30, que no se admiten. NAS100 solo está disponible en `5m`, `15m` y `1d`; con `--all` esas combinaciones se omiten con aviso y, si se piden explícitamente, dan error.
+> - **`4h` con bloques parciales:** se construye desde `1h` y puede tener bloques con menos de 4 velas (p. ej. GC=F 20–24 UTC); la CLI avisa de cuántos.
+> - **XAU/USD** se descarga como `GC=F`, el **futuro** continuo del oro, no el spot: el precio puede diferir por base y vencimientos.
+> - **Volumen en FX:** EUR/USD suele venir con volumen 0 o inexistente; no se puede usar para estudios de volumen. El volumen de `GC=F` y `^NDX` es el que informa Yahoo.
+> - **La historia propia crece con la ingesta:** la base de datos conserva lo ya guardado, así que ejecutar `incremental` con frecuencia acumula más historia de `5m`/`15m` que la ventana de Yahoo.
 - Tras cambiar esquemas o endpoints: `cd backend && uv run python scripts/export_openapi.py` y `cd frontend && npm run gen:api`; versiona `openapi.json` y `types/api.ts`.
 
 ### 4. Frontend (Next.js)

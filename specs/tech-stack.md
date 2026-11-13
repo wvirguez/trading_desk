@@ -60,8 +60,10 @@ trading_desk/
 | Mercado | Proveedor | Librería |
 | :--- | :--- | :--- |
 | Cripto (BTC/USDT) | Binance (datos públicos) | `ccxt` (async) |
-| Forex (EUR/USD, XAU/USD) | **OANDA v20, cuenta practice** | `httpx` async contra la REST API v20 |
-| Índices (NAS100) | **OANDA v20** (`NAS100_USD`) | Ídem |
+| Forex (EUR/USD), metales (XAU/USD vía `GC=F`, futuro) e índices (NAS100 vía `^NDX`) | **Yahoo Finance (provisional)** | `yfinance` (síncrono, llamado con `asyncio.to_thread`); no oficial, solo uso personal |
+| Forex, metales e índices (alternativa) | **OANDA v20, cuenta practice** (**aplazado**; adaptador conservado) | `httpx` async contra la REST API v20 |
+
+Timeframes del MVP: `5m`, `15m`, `1h`, `4h`, `1d`. Yahoo limita la historia de `5m`/`15m` a ~59 días y la de `1h` a ~729; `4h` se construye desde `1h` (se emiten bloques parciales y se avisa). Limitación: NAS100 (`^NDX`) no admite `1h` ni `4h` con Yahoo (velas de 1h a :30 UTC); solo `5m`, `15m` y `1d`.
 
 Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que devuelve `CandleSchema` normalizado en UTC.
 
@@ -97,3 +99,4 @@ Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que 
 - **2026-11-12:** versión inicial. Decisiones de la entrevista: monorepo, Claude + PydanticAI, OANDA para FX e índices, TimescaleDB, tipos generados con openapi-typescript, testing y CI.
 - **2026-11-12 (Bloque 0):** Python fijado en 3.12; Node 22+ (Vitest 5); PostgreSQL 16 local en el puerto 5432 (el PG14 pasa al 5433, apagado); CI con *service* Timescale; Playwright aplazado a la fase 4.
 - **2026-11-13 (Fase 1):** dependencias añadidas: `ccxt`, `structlog` y `httpx` (pasa de dev a runtime) en el backend, y `openapi-typescript` (dev) en el frontend. Precios y tamaños en `Decimal` (Pydantic) y `NUMERIC` (Postgres), nunca `float`; en JSON viajan como cadena. El contrato `backend/openapi.json` queda versionado y `frontend/types/api.ts` se genera con `npm run gen:api`; la CI falla si alguno de los dos no está al día.
+- **2026-11-13 (proveedor Yahoo):** dependencia añadida: `yfinance` (runtime, proveedor provisional para FX, metales e índices; OANDA queda aplazado, su adaptador se conserva). `pandas` y `numpy` llegan como dependencias transitivas y **solo se usan dentro de `app/market_data/yahoo.py`**. Se añade el timeframe `5m`; el conjunto del MVP pasa a ser `5m`, `15m`, `1h`, `4h`, `1d`. Yahoo es no oficial y de uso personal; su historia de `5m`/`15m` es de ~59 días. NAS100 sin `1h`/`4h` (D48) y `4h` con bloques parciales avisados (D31, D49).

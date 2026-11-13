@@ -12,11 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings, get_settings
 from app.core.db import get_sessionmaker
 from app.core.logging import configure_logging
-from app.market_data.base import MarketDataAdapter, utcnow
+from app.market_data.base import MarketDataAdapter, UnsupportedTimeframeError, utcnow
 from app.market_data.registry import adapter_for
 from app.models.instrument import Instrument
 from app.repositories import instruments as instruments_repo
-from app.schemas.enums import Timeframe
+from app.schemas.enums import Provider, Timeframe
 from app.schemas.instrument import InstrumentSchema
 from app.services import ingestion
 
@@ -57,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     ):
         p = sub.add_parser(name, help=help_text, description=help_text)
         p.add_argument("--symbol", help="Símbolo canónico, p. ej. BTC/USDT.")
-        p.add_argument("--tf", type=_parse_tf, help="Timeframe: 15m, 1h, 4h o 1d.")
+        p.add_argument("--tf", type=_parse_tf, help="Timeframe: 5m, 15m, 1h, 4h o 1d.")
         p.add_argument(
             "--all",
             action="store_true",
@@ -91,7 +91,9 @@ async def _process(
     async with sessionmaker() as session:
         try:
             if command == "backfill":
-                start = since or ingestion.default_since(tf, now, settings)
+                start = since or ingestion.default_since(
+                    tf, now, settings, Provider(instrument.provider)
+                )
                 return await ingestion.backfill(session, adapter, instrument, tf, start, now=now)
             return await ingestion.incremental(
                 session, adapter, instrument, tf, now=now, settings=settings
@@ -132,6 +134,7 @@ async def run(
     timeframes = (args.tf,) if args.tf is not None else _ALL_TFS
 
     failures = 0
+    skipped = 0
     written_total = 0
     for instrument in selected:
         for tf in timeframes:
@@ -139,6 +142,25 @@ async def run(
                 result = await _process(
                     maker, factory, args.command, instrument, tf, since, now, cfg
                 )
+            except UnsupportedTimeframeError as exc:
+                if args.all:  # D48: con --all se omite; pedida explícitamente es un error
+                    skipped += 1
+                    log.warning(
+                        "ingesta_omitida",
+                        message=f"{instrument.symbol} {tf.value}: omitido: {exc}",
+                        symbol=instrument.symbol,
+                        timeframe=tf.value,
+                    )
+                    continue
+                failures += 1
+                log.error(
+                    "ingesta_fallida",
+                    message=f"Falló la ingesta de {instrument.symbol} {tf.value}: {exc}",
+                    symbol=instrument.symbol,
+                    timeframe=tf.value,
+                    error=repr(exc),
+                )
+                continue
             except Exception as exc:
                 failures += 1
                 log.error(
@@ -168,11 +190,18 @@ async def run(
                 first_ts=result.first_ts.isoformat() if result.first_ts else None,
                 last_ts=result.last_ts.isoformat() if result.last_ts else None,
             )
+            for notice in result.notices:
+                log.warning(
+                    "aviso_ingesta",
+                    message=f"{instrument.symbol} {tf.value}: {notice}",
+                    symbol=instrument.symbol,
+                    timeframe=tf.value,
+                )
 
-    total = len(selected) * len(timeframes)
+    total = len(selected) * len(timeframes) - skipped
     print(
         f"Resumen: {total - failures} de {total} ingestas correctas, {failures} con error, "
-        f"{written_total} filas escritas."
+        f"{skipped} omitidas (no soportadas), {written_total} filas escritas."
     )
     return 1 if failures else 0
 

@@ -102,3 +102,19 @@ async def test_rechaza_instrumento_de_otro_proveedor(eurusd: InstrumentSchema) -
         await CcxtAdapter(FakeExchange([]), now=lambda: NOW).fetch_ohlcv(
             eurusd, Timeframe.H1, START, END
         )
+
+
+@pytest.mark.parametrize(
+    ("tf", "expected", "step_ms"),
+    [(Timeframe.M5, "5m", 300_000), (Timeframe.M15, "15m", 900_000), (Timeframe.H1, "1h", H_MS)],
+)
+async def test_envia_el_timeframe_de_ccxt(
+    btc: InstrumentSchema, tf: Timeframe, expected: str, step_ms: int
+) -> None:
+    base = int(START.timestamp() * 1000)
+    rows = [[base + i * step_ms, 100.0, 101.0, 99.0, 100.5, 10.0] for i in range(3)]
+    exchange = FakeExchange([rows])
+    candles = await CcxtAdapter(exchange, now=lambda: END).fetch_ohlcv(btc, tf, START, END)
+    assert exchange.calls[0]["timeframe"] == expected
+    assert [c.timeframe for c in candles] == [tf] * 3
+    assert candles[1].ts - candles[0].ts == tf.duration

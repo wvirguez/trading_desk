@@ -25,15 +25,15 @@ EXPECTED = {
         Decimal("0.01"), Decimal("0.00001"), SessionType.CRYPTO_24_7,
     ),
     "EUR/USD": (
-        AssetClass.FX, Provider.OANDA, "EUR_USD", "EUR", "USD",
+        AssetClass.FX, Provider.YAHOO, "EURUSD=X", "EUR", "USD",
         Decimal("0.00001"), Decimal("1"), SessionType.FX_24_5,
     ),
     "XAU/USD": (
-        AssetClass.METAL, Provider.OANDA, "XAU_USD", "XAU", "USD",
+        AssetClass.METAL, Provider.YAHOO, "GC=F", "XAU", "USD",
         Decimal("0.001"), Decimal("1"), SessionType.FX_24_5,
     ),
     "NAS100": (
-        AssetClass.INDEX, Provider.OANDA, "NAS100_USD", "NAS100", "USD",
+        AssetClass.INDEX, Provider.YAHOO, "^NDX", "NAS100", "USD",
         Decimal("0.1"), Decimal("0.1"), SessionType.INDEX_CFD,
     ),
 }  # fmt: skip
@@ -106,6 +106,100 @@ async def test_trade_signal_rechaza_status_desconocido(db_session: AsyncSession)
             ),
             {"i": instrument_id},
         )
+
+
+async def test_check_admite_yahoo_y_5m(db_session: AsyncSession) -> None:
+    instrument_id = await _instrument_id(db_session)
+    await db_session.execute(
+        text(
+            "INSERT INTO ohlcv_bars (instrument_id, timeframe, ts, open, high, low, close, "
+            "volume) VALUES (:i, '5m', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1)"
+        ),
+        {"i": instrument_id},
+    )
+    await db_session.execute(
+        text(
+            "INSERT INTO trade_signals (instrument_id, timeframe, direction, entry, stop_loss, "
+            "take_profit) VALUES (:i, '5m', 'LONG', 100, 95, 110)"
+        ),
+        {"i": instrument_id},
+    )
+    with pytest.raises(IntegrityError, match="ck_ohlcv_bars_timeframe"):
+        await db_session.execute(
+            text(
+                "INSERT INTO ohlcv_bars (instrument_id, timeframe, ts, open, high, low, close, "
+                "volume) VALUES (:i, '2m', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1)"
+            ),
+            {"i": instrument_id},
+        )
+
+
+def _alembic(*args: str) -> None:
+    env = {**os.environ, "DATABASE_URL": get_settings().test_database_url}
+    proc = subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "alembic", *args],
+        cwd=BACKEND_DIR,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert proc.returncode == 0, f"alembic {' '.join(args)} falló:\n{proc.stderr}"
+
+
+async def _providers(session: AsyncSession) -> dict[str, tuple[str, str]]:
+    rows = (
+        await session.execute(text("SELECT symbol, provider, provider_symbol FROM instruments"))
+    ).all()
+    return {r.symbol: (r.provider, r.provider_symbol) for r in rows}
+
+
+async def test_downgrade_0005_devuelve_oanda_y_upgrade_reaplica_yahoo(
+    db_session: AsyncSession,
+) -> None:
+    binance = ("BINANCE", "BTC/USDT")
+    assert await _providers(db_session) == {
+        "BTC/USDT": binance,
+        "EUR/USD": ("YAHOO", "EURUSD=X"),
+        "XAU/USD": ("YAHOO", "GC=F"),
+        "NAS100": ("YAHOO", "^NDX"),
+    }
+    instrument_id = await _instrument_id(db_session)
+    await db_session.execute(
+        text(
+            "INSERT INTO ohlcv_bars (instrument_id, timeframe, ts, open, high, low, close, "
+            "volume) VALUES (:i, '5m', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1), "
+            "(:i, '1h', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1)"
+        ),
+        {"i": instrument_id},
+    )
+    await db_session.commit()
+    try:
+        _alembic("downgrade", "0004_trade_signals")
+        db_session.expire_all()
+        assert await _providers(db_session) == {
+            "BTC/USDT": binance,
+            "EUR/USD": ("OANDA", "EUR_USD"),
+            "XAU/USD": ("OANDA", "XAU_USD"),
+            "NAS100": ("OANDA", "NAS100_USD"),
+        }
+        await db_session.rollback()
+        remaining = await db_session.execute(
+            text("SELECT timeframe FROM ohlcv_bars ORDER BY timeframe")
+        )
+        assert [r.timeframe for r in remaining] == ["1h"]  # las filas 5m se limpian
+        await db_session.rollback()
+        with pytest.raises(IntegrityError, match="ck_instruments_provider"):
+            await db_session.execute(
+                text("UPDATE instruments SET provider = 'YAHOO' WHERE symbol = 'EUR/USD'")
+            )
+        await db_session.rollback()
+    finally:
+        _alembic("upgrade", "head")
+    db_session.expire_all()
+    assert (await _providers(db_session))["EUR/USD"] == ("YAHOO", "EURUSD=X")
+    assert (await _providers(db_session))["BTC/USDT"] == binance
 
 
 def test_downgrade_base_y_upgrade_head() -> None:

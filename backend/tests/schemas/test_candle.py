@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.schemas.candle import CandleSchema
 from app.schemas.enums import Timeframe
 
-TS = datetime(2024, 3, 5, 0, 0, tzinfo=UTC)  # alineado con los 4 timeframes
+TS = datetime(2024, 3, 5, 0, 0, tzinfo=UTC)  # alineado con los 5 timeframes
 
 
 def make(**overrides: Any) -> CandleSchema:
@@ -46,6 +46,7 @@ def test_ts_con_offset_se_normaliza_a_utc() -> None:
 @pytest.mark.parametrize(
     ("tf", "ts"),
     [
+        (Timeframe.M5, datetime(2024, 3, 5, 12, 3, tzinfo=UTC)),
         (Timeframe.M15, datetime(2024, 3, 5, 12, 10, tzinfo=UTC)),
         (Timeframe.H1, datetime(2024, 3, 5, 12, 15, tzinfo=UTC)),
         (Timeframe.H4, datetime(2024, 3, 5, 13, 0, tzinfo=UTC)),

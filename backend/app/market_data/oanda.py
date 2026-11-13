@@ -25,6 +25,7 @@ log = structlog.get_logger(__name__)
 
 PAGE_COUNT = 5000
 _GRANULARITY: dict[Timeframe, str] = {
+    Timeframe.M5: "M5",
     Timeframe.M15: "M15",
     Timeframe.H1: "H1",
     Timeframe.H4: "H4",

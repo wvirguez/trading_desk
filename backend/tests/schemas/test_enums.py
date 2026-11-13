@@ -9,9 +9,13 @@ def test_valores_de_enums_segun_la_spec() -> None:
     assert {m.name: m.value for m in AssetClass} == {
         "CRYPTO": "CRYPTO", "FX": "FX", "METAL": "METAL", "INDEX": "INDEX",
     }  # fmt: skip
-    assert {m.name: m.value for m in Provider} == {"BINANCE": "BINANCE", "OANDA": "OANDA"}
+    assert {m.name: m.value for m in Provider} == {
+        "BINANCE": "BINANCE",
+        "OANDA": "OANDA",
+        "YAHOO": "YAHOO",
+    }
     assert {m.name: m.value for m in Timeframe} == {
-        "M15": "15m", "H1": "1h", "H4": "4h", "D1": "1d",
+        "M5": "5m", "M15": "15m", "H1": "1h", "H4": "4h", "D1": "1d",
     }  # fmt: skip
     assert [m.value for m in Direction] == ["LONG", "SHORT"]
     assert [m.value for m in SignalStatus] == ["PENDING", "APPROVED", "REJECTED", "EXECUTED"]
@@ -21,6 +25,7 @@ def test_valores_de_enums_segun_la_spec() -> None:
 @pytest.mark.parametrize(
     ("tf", "delta"),
     [
+        (Timeframe.M5, timedelta(minutes=5)),
         (Timeframe.M15, timedelta(minutes=15)),
         (Timeframe.H1, timedelta(hours=1)),
         (Timeframe.H4, timedelta(hours=4)),
@@ -33,6 +38,7 @@ def test_duration(tf: Timeframe, delta: timedelta) -> None:
 
 def test_floor() -> None:
     dt = datetime(2024, 3, 5, 14, 52, 31, tzinfo=UTC)
+    assert Timeframe.M5.floor(dt) == datetime(2024, 3, 5, 14, 50, tzinfo=UTC)
     assert Timeframe.M15.floor(dt) == datetime(2024, 3, 5, 14, 45, tzinfo=UTC)
     assert Timeframe.H1.floor(dt) == datetime(2024, 3, 5, 14, 0, tzinfo=UTC)
     assert Timeframe.H4.floor(dt) == datetime(2024, 3, 5, 12, 0, tzinfo=UTC)
