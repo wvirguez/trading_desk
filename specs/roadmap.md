@@ -17,15 +17,15 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 
 ## Fase 1 — Datos y esquemas *(TODO: Week 1)*
 
-- [ ] **1.1 Esquemas de dominio.** Enums (`AssetClass`, `Timeframe`, `Direction`, `SignalStatus`), `InstrumentSchema` y `CandleSchema`. *Hecho:* tests de validación de los esquemas.
-- [ ] **1.2 Modelo `instruments`.** Modelo, migración y seed de los 4 instrumentos (BTC/USDT, EUR/USD, XAU/USD, NAS100) con tick size, lot size y sesión.
-- [ ] **1.3 Modelo `ohlcv_bars`.** Hypertable de Timescale con clave única `(instrument_id, timeframe, ts)` y upsert idempotente.
-- [ ] **1.4 Modelo `trade_signals`.** Tabla de señales y migración (estados `PENDING`/`APPROVED`/`REJECTED`/`EXECUTED`).
-- [ ] **1.5 Interfaz `MarketDataAdapter`.** Protocolo común y normalización a `CandleSchema` en UTC, con un adaptador *fake* para tests.
-- [ ] **1.6 Adaptador ccxt (cripto).** OHLCV histórico paginado de BTC/USDT. *Hecho:* test con respuestas grabadas.
-- [ ] **1.7 Adaptador OANDA (FX + índices).** EUR/USD, XAU/USD y NAS100_USD contra la cuenta practice. *Hecho:* test con respuestas grabadas.
-- [ ] **1.8 Servicio de ingesta.** Backfill e ingesta incremental por instrumento y timeframe, ejecutables con un comando CLI.
-- [ ] **1.9 Endpoint `GET /market/ohlcv`.** Recibe `symbol`, `tf` y `limit`, devuelve `List[CandleSchema]` y genera el primer `openapi-typescript`. *Hecho:* los tipos TS se generan y la CI comprueba que están actualizados.
+- [x] **1.1 Esquemas de dominio.** Enums (`AssetClass`, `Timeframe`, `Direction`, `SignalStatus`), `InstrumentSchema` y `CandleSchema`. *Hecho:* tests de validación de los esquemas.
+- [x] **1.2 Modelo `instruments`.** Modelo, migración y seed de los 4 instrumentos (BTC/USDT, EUR/USD, XAU/USD, NAS100) con tick size, lot size y sesión.
+- [x] **1.3 Modelo `ohlcv_bars`.** Hypertable de Timescale con clave única `(instrument_id, timeframe, ts)` y upsert idempotente.
+- [x] **1.4 Modelo `trade_signals`.** Tabla de señales y migración (estados `PENDING`/`APPROVED`/`REJECTED`/`EXECUTED`).
+- [x] **1.5 Interfaz `MarketDataAdapter`.** Protocolo común y normalización a `CandleSchema` en UTC, con un adaptador *fake* para tests.
+- [x] **1.6 Adaptador ccxt (cripto).** OHLCV histórico paginado de BTC/USDT. *Hecho:* test con respuestas grabadas.
+- [x] **1.7 Adaptador OANDA (FX + índices).** EUR/USD, XAU/USD y NAS100_USD contra la cuenta practice. *Hecho:* test con respuestas grabadas. *Nota (2026-11-13):* sin cuenta OANDA, los datos reales de FX, XAU/USD (`GC=F`) y NAS100 vienen provisionalmente de Yahoo (`yfinance`); ver `specs/2026-11-13-proveedor-yahoo/`. Pendiente: proveedor fiable.
+- [x] **1.8 Servicio de ingesta.** Backfill e ingesta incremental por instrumento y timeframe, ejecutables con un comando CLI.
+- [x] **1.9 Endpoint `GET /market/ohlcv`.** Recibe `symbol`, `tf` y `limit`, devuelve `List[CandleSchema]` y genera el primer `openapi-typescript`. *Hecho:* los tipos TS se generan y la CI comprueba que están actualizados.
 
 ## Fase 2 — Motor cuantitativo y núcleo de riesgo determinista *(TODO: Week 2)*
 
