@@ -254,7 +254,8 @@ uv run python -m app.cli.ingest incremental --all
 curl "localhost:8000/api/v1/market/ohlcv?symbol=BTC%2FUSDT&tf=1h&limit=500"
 ```
 
-- `backfill` descarga el horizonte por defecto (o desde `--since`); `incremental` parte de la última vela guardada.
+- `backfill` descarga el horizonte por defecto (o desde `--since`); `incremental` parte de la última vela guardada. Un `incremental` sin velas nuevas (fin de semana, mercado cerrado) termina con exit 0 y lo avisa; con Yahoo, una respuesta vacía por bloqueo se ve igual.
+- `--all` sin `--tf` recorre solo los timeframes con horizonte configurado de cada proveedor (Binance y Yahoo: `5m`–`1d`; OANDA: sin `5m`, que solo se descarga con `--tf 5m` explícito) e imprime al inicio el número de combinaciones.
 - BTC/USDT usa Binance (datos públicos). EUR/USD, XAU/USD y NAS100 usan **Yahoo Finance** (sin credenciales). El adaptador de OANDA se conserva, pero ningún instrumento lo usa hoy; su validación contra una cuenta real sigue pendiente.
 - Timeframes del MVP: `5m`, `15m`, `1h`, `4h` y `1d`. En Yahoo, `4h` se construye agrupando velas de `1h` en bloques 00/04/08/12/16/20 UTC; los bloques con menos de 4 velas de `1h` (huecos de mercado) se emiten igualmente y la CLI avisa de cuántos fueron.
 

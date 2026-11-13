@@ -23,8 +23,6 @@ from app.services import ingestion
 AdapterFactory = Callable[[InstrumentSchema], MarketDataAdapter]
 Clock = Callable[[], datetime]
 
-_ALL_TFS = tuple(Timeframe)
-
 
 def _parse_since(value: str) -> datetime:
     try:
@@ -61,7 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument(
             "--all",
             action="store_true",
-            help="Todos los instrumentos (y todos los timeframes si no se indica --tf).",
+            help=(
+                "Todos los instrumentos (y, si no se indica --tf, los timeframes con horizonte "
+                "configurado de su proveedor)."
+            ),
         )
         if name == "backfill":
             p.add_argument("--since", type=_parse_since, help="Inicio del rango (AAAA-MM-DD, UTC).")
@@ -131,74 +132,84 @@ async def run(
         if not selected:
             log.error("instrumento_desconocido", message=f"Instrumento desconocido: {args.symbol}")
             return 1
-    timeframes = (args.tf,) if args.tf is not None else _ALL_TFS
+    plan: list[tuple[Instrument, Timeframe]] = [
+        (inst, tf)
+        for inst in selected
+        for tf in (
+            (args.tf,)
+            if args.tf is not None
+            else ingestion.DEFAULT_TIMEFRAMES[Provider(inst.provider)]
+        )
+    ]
+    if args.all:
+        print(
+            f"Alcance: {len(plan)} combinaciones instrumento/timeframe "
+            f"({len(selected)} instrumentos)."
+        )
 
     failures = 0
     skipped = 0
     written_total = 0
-    for instrument in selected:
-        for tf in timeframes:
-            try:
-                result = await _process(
-                    maker, factory, args.command, instrument, tf, since, now, cfg
-                )
-            except UnsupportedTimeframeError as exc:
-                if args.all:  # D48: con --all se omite; pedida explícitamente es un error
-                    skipped += 1
-                    log.warning(
-                        "ingesta_omitida",
-                        message=f"{instrument.symbol} {tf.value}: omitido: {exc}",
-                        symbol=instrument.symbol,
-                        timeframe=tf.value,
-                    )
-                    continue
-                failures += 1
-                log.error(
-                    "ingesta_fallida",
-                    message=f"Falló la ingesta de {instrument.symbol} {tf.value}: {exc}",
-                    symbol=instrument.symbol,
-                    timeframe=tf.value,
-                    error=repr(exc),
-                )
-                continue
-            except Exception as exc:
-                failures += 1
-                log.error(
-                    "ingesta_fallida",
-                    message=f"Falló la ingesta de {instrument.symbol} {tf.value}: {exc}",
-                    symbol=instrument.symbol,
-                    timeframe=tf.value,
-                    error=repr(exc),
-                )
-                continue
-            written_total += result.written
-            event = "ingesta_ok" if result.fetched else "ingesta_sin_datos"
-            message = (
-                f"{instrument.symbol} {tf.value}: {result.fetched} velas recibidas, "
-                f"{result.written} escritas"
-                if result.fetched
-                else f"{instrument.symbol} {tf.value}: no se descargó ninguna vela"
-            )
-            emit = log.info if result.fetched else log.warning
-            emit(
-                event,
-                message=message,
-                symbol=result.symbol,
-                timeframe=tf.value,
-                fetched=result.fetched,
-                written=result.written,
-                first_ts=result.first_ts.isoformat() if result.first_ts else None,
-                last_ts=result.last_ts.isoformat() if result.last_ts else None,
-            )
-            for notice in result.notices:
+    for instrument, tf in plan:
+        try:
+            result = await _process(maker, factory, args.command, instrument, tf, since, now, cfg)
+        except UnsupportedTimeframeError as exc:
+            if args.all:  # D48: con --all se omite; pedida explícitamente es un error
+                skipped += 1
                 log.warning(
-                    "aviso_ingesta",
-                    message=f"{instrument.symbol} {tf.value}: {notice}",
+                    "ingesta_omitida",
+                    message=f"{instrument.symbol} {tf.value}: omitido: {exc}",
                     symbol=instrument.symbol,
                     timeframe=tf.value,
                 )
+                continue
+            failures += 1
+            log.error(
+                "ingesta_fallida",
+                message=f"Falló la ingesta de {instrument.symbol} {tf.value}: {exc}",
+                symbol=instrument.symbol,
+                timeframe=tf.value,
+                error=repr(exc),
+            )
+            continue
+        except Exception as exc:
+            failures += 1
+            log.error(
+                "ingesta_fallida",
+                message=f"Falló la ingesta de {instrument.symbol} {tf.value}: {exc}",
+                symbol=instrument.symbol,
+                timeframe=tf.value,
+                error=repr(exc),
+            )
+            continue
+        written_total += result.written
+        event = "ingesta_ok" if result.fetched else "ingesta_sin_datos"
+        message = (
+            f"{instrument.symbol} {tf.value}: {result.fetched} velas recibidas, "
+            f"{result.written} escritas"
+            if result.fetched
+            else f"{instrument.symbol} {tf.value}: no se descargó ninguna vela"
+        )
+        emit = log.info if result.fetched else log.warning
+        emit(
+            event,
+            message=message,
+            symbol=result.symbol,
+            timeframe=tf.value,
+            fetched=result.fetched,
+            written=result.written,
+            first_ts=result.first_ts.isoformat() if result.first_ts else None,
+            last_ts=result.last_ts.isoformat() if result.last_ts else None,
+        )
+        for notice in result.notices:
+            log.warning(
+                "aviso_ingesta",
+                message=f"{instrument.symbol} {tf.value}: {notice}",
+                symbol=instrument.symbol,
+                timeframe=tf.value,
+            )
 
-    total = len(selected) * len(timeframes) - skipped
+    total = len(plan) - skipped
     print(
         f"Resumen: {total - failures} de {total} ingestas correctas, {failures} con error, "
         f"{skipped} omitidas (no soportadas), {written_total} filas escritas."
