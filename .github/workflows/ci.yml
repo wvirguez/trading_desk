@@ -64,6 +64,11 @@ jobs:
       - name: Pytest (incluye tests marcados db)
         run: uv run pytest
 
+      - name: Contrato OpenAPI actualizado
+        run: |
+          uv run python scripts/export_openapi.py
+          git diff --exit-code openapi.json
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -80,6 +85,10 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
+      - name: Tipos de la API actualizados
+        run: |
+          npm run gen:api
+          git diff --exit-code types/api.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

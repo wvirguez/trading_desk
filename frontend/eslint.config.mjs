@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generado por openapi-typescript (npm run gen:api).
+    "types/api.ts",
   ]),
 ]);
 

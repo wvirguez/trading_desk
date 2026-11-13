@@ -168,10 +168,13 @@ trading_desk/
 ├── backend/                        # FastAPI + motor cuantitativo + agentes (Python 3.12, uv)
 │   ├── app/
 │   │   ├── api/v1/                 # Routers REST, SSE y WebSocket
-│   │   ├── core/                   # Config (pydantic-settings), sesión de BD
+│   │   ├── core/                   # Config (pydantic-settings), sesión de BD, logging (structlog)
 │   │   ├── models/                 # Modelos ORM SQLAlchemy 2.0
 │   │   ├── schemas/                # DTOs Pydantic v2 (contratos)
-│   │   ├── data_feeds/             # (fase 1) Adaptadores ccxt y OANDA
+│   │   ├── market_data/            # Adaptadores ccxt (Binance), OANDA v20 y fake; registro
+│   │   ├── repositories/           # Acceso a datos: instrumentos y velas (upsert idempotente)
+│   │   ├── services/               # Servicios de aplicación (ingesta de velas)
+│   │   ├── cli/                    # CLI de ingesta: `python -m app.cli.ingest`
 │   │   ├── quant/                  # (fase 2) Indicadores, Hurst, Z-score, backtester
 │   │   ├── risk/                   # (fase 2) Position sizing, Kelly, guardas de drawdown
 │   │   ├── agents/                 # (fase 3) Agentes PydanticAI y orquestador
@@ -179,6 +182,8 @@ trading_desk/
 │   │   └── main.py                 # App FastAPI
 │   ├── alembic/                    # Migraciones
 │   ├── scripts/setup_db.sh         # Rol, bases de datos y extensiones (idempotente)
+│   ├── scripts/export_openapi.py   # Escribe openapi.json (contrato versionado)
+│   ├── openapi.json                # Contrato OpenAPI versionado (la CI comprueba que esté al día)
 │   ├── tests/                      # pytest (marcador `db` para tests con BD real)
 │   ├── .env.example
 │   ├── pyproject.toml
@@ -187,7 +192,7 @@ trading_desk/
 ├── frontend/                       # Next.js 16 (App Router, Node 22+)
 │   ├── app/                        # Rutas (fase 4: /desk, /backtest, /agents, /journal)
 │   ├── components/ hooks/ store/   # (fase 4)
-│   ├── types/api.ts                # (fase 1) GENERADO con openapi-typescript (no editar)
+│   ├── types/api.ts                # GENERADO con openapi-typescript (no editar; `npm run gen:api`)
 │   ├── AGENTS.md                   # Avisos de Next 16 para agentes (gestionado por next dev)
 │   ├── vitest.config.mts
 │   └── package.json
@@ -236,7 +241,23 @@ uv run uvicorn app.main:app --reload             # http://localhost:8000/docs
 curl localhost:8000/api/v1/health                # 200 {"status":"ok",...} · 503 si la BD falla
 ```
 
-### 3. Frontend (Next.js)
+### 3. Ingesta de datos de mercado
+
+Con las migraciones aplicadas (incluyen el seed de `instruments`), la CLI descarga velas cerradas, normalizadas en UTC, y las guarda de forma idempotente:
+
+```bash
+cd backend
+uv run python -m app.cli.ingest backfill    --symbol BTC/USDT --tf 1h [--since 2024-01-01]
+uv run python -m app.cli.ingest incremental --symbol BTC/USDT --tf 1h
+uv run python -m app.cli.ingest incremental --all
+curl "localhost:8000/api/v1/market/ohlcv?symbol=BTC%2FUSDT&tf=1h&limit=500"
+```
+
+- `backfill` descarga el horizonte por defecto (o desde `--since`); `incremental` parte de la última vela guardada.
+- BTC/USDT usa Binance (datos públicos). EUR/USD, XAU/USD y NAS100 requieren `OANDA_API_TOKEN` y `OANDA_ACCOUNT_ID` en `.env`; la validación contra OANDA real sigue pendiente (aún no hay cuenta practice).
+- Tras cambiar esquemas o endpoints: `cd backend && uv run python scripts/export_openapi.py` y `cd frontend && npm run gen:api`; versiona `openapi.json` y `types/api.ts`.
+
+### 4. Frontend (Next.js)
 
 ```bash
 cd frontend
@@ -247,22 +268,23 @@ npm run dev                                      # http://localhost:3000
 
 > ⚠️ Next.js 16 introduce cambios incompatibles con versiones anteriores. Antes de escribir código de frontend, consulta `frontend/node_modules/next/dist/docs/` (véase [`frontend/AGENTS.md`](frontend/AGENTS.md)).
 
-### 4. Calidad y tests
+### 5. Calidad y tests
 
 ```bash
 # Backend
 cd backend
 uv run ruff check . && uv run ruff format --check .
 uv run mypy app                                  # strict
-uv run pytest                                    # todos (requiere la BD de tests)
+uv run pytest                                    # todos (requiere la BD de tests migrada a head)
 uv run pytest -m "not db"                        # sin base de datos
 
 # Frontend
 cd frontend
+npm run gen:api                                  # regenera types/api.ts desde backend/openapi.json
 npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo anterior en cada PR contra un *service* `timescale/timescaledb:latest-pg16`. Playwright (E2E) y `npm run gen:api` llegarán en las fases 4 y 1, respectivamente.
+La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo anterior en cada PR contra un *service* `timescale/timescaledb:latest-pg16`. Además comprueba que `backend/openapi.json` y `frontend/types/api.ts` están regenerados (falla si `git diff` no está vacío). Playwright (E2E) llegará en la fase 4.
 
 ---
 

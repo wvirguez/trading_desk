@@ -1,71 +1,62 @@
 ----
-name: feature-spec
-description: Inicia una nueva función de este proyecto al encontrar la siguiente fase incompleta en specs/roadmap.md, crea una rama de Git, entrevista al usuario sobre el alcance, las decisiones y el contexto, y escribe un directorio con fecha en specs/ que contiene plan.md, requirements.md y validation.md. Se activa cuando el usuario dice "especificación de la función", "siguiente fase", "iniciar la siguiente función" o invoca /feature-spec.
----
+name: spec-implemeter
+description: Implementa el plan de una especificación de este proyecto. Recibe la ruta de un plan.md (o del directorio de la spec en specs/), lee la misión, el stack y el roadmap, implementa los grupos de tareas uno a uno con subagentes y, al terminar, hace una revisión y entrega una lista de errores críticos sin corregirlos. Se invoca manualmente (/spec-implemeter specs/AAAA-MM-DD-nombre/plan.md).
+disable-model-invocation: true
+argument-hint: specs/AAAA-MM-DD-<nombre>/plan.md
+----
 
-# Especificación de la función
+# Implementador de especificaciones
+
+Implementa el `plan.md` indicado por el usuario. El argumento es la ruta a un `plan.md` o al directorio de la spec (en ese caso, usa `plan.md` dentro de él). Si no se indica ruta, pregunta cuál spec implementar; no adivines.
 
 ## Flujo de trabajo
 
-### 1. Encontrar la siguiente fase
+### 1. Contexto del proyecto
 
-Lee `specs/roadmap.md`. La siguiente fase es la primera sección cuyos elementos están entre corchetes `[ ]`. Anota su nombre para obtener el nombre de la rama y del directorio.
+Lee, antes de tocar código:
+- `specs/mission.md` y `specs/tech-stack.md` (detalles del proyecto; si una spec los contradice, ganan estos archivos).
+- `specs/roadmap.md` (fases del proyecto; identifica a cuál pertenece la spec).
+- `AGENTS.md`: Next.js 16 tiene cambios incompatibles; lee la guía relevante en `node_modules/next/dist/docs/` antes de escribir código de framework.
+- Los hermanos del `plan.md` indicado: `requirements.md` y `validation.md`.
 
-### 2. Crea la rama
+Confirma que estás en la rama de la fase (`phase-N-...`); si estás en `main`, avisa al usuario antes de continuar.
 
-```
-git checkout -b phase-N-<kebab-name>
-```
+### 2. Implementar los grupos de tareas, uno a la vez
 
-### 3. Entrevista al usuario — ANTES de escribir cualquier archivo
+Los grupos del `plan.md` (Base de datos → Componentes → Página y ruta → Navegación → Pruebas, etc.) se implementan **secuencialmente, de uno en uno**:
 
-Usa `AskUserQuestion` con exactamente **3 preguntas en una sola llamada**:
+1. Lanza un subagente (herramienta `Agent`, tipo `general-purpose`) por grupo. En el prompt incluye: la ruta de la spec, el texto exacto del grupo y sus subtareas, las restricciones de la pila (abajo) y qué grupos ya están hechos. No lances grupos en paralelo.
+2. Al volver el subagente, comprueba brevemente que realizó lo pedido (`git status`/`git diff --stat`) y pasa al siguiente grupo. No corrijas nada a mano entre grupos salvo que el siguiente grupo no pueda avanzar sin ello; si ocurre, repórtalo.
+3. Un grupo sin cambios ("Ninguno", "Sin cambios") se omite y se anota.
 
-| Encabezado | Enfoque de la pregunta |
+Restricciones de la pila para cada subagente:
+- Next.js 16 (App Router), React 19, Tailwind 4, TypeScript estricto y **sin `any`**.
+- Prisma 7 con adaptador MariaDB; cliente desde `lib/db.ts`; variables validadas en `lib/env.ts`; `.env*` fuera de git. Usa el MySQL local, no Docker.
+- Zod en los límites del sistema. Server Components por defecto; `"use client"` solo si hace falta.
+- Todo código nuevo lleva pruebas (Vitest + Testing Library).
+- **No añadir dependencias** sin aprobación del usuario.
+- Interfaz solo en español, tono honesto y sin falsas urgencias (ver `specs/mission.md`).
+- No hacer commit ni push.
 
-|--------|---------------|
+### 3. Revisión (sin arreglar)
 
-| **Alcance** | Qué recopila, expone o hace la funcionalidad: campos, comportamiento de la página, estructura de los datos |
+Una vez implementados todos los grupos:
+1. Ejecuta `npm test`, `npm run lint` y `npx tsc --noEmit` (y `npm run build` si el plan toca rutas o esquema). Registra los fallos tal cual.
+2. Lanza un subagente revisor (solo lectura: no edita archivos) que compare el `git diff` contra `plan.md`, `requirements.md` y `validation.md`, y busque: tareas del plan sin implementar, incumplimientos de la pila, `any`, dependencias nuevas, secretos en código, código sin pruebas, errores de lógica y desvíos del tono de la misión.
 
-| **Decisiones** | Opciones clave de implementación: almacenamiento, visibilidad, validación, patrón de UX |
+**No arregles nada después de esta revisión.** Ni los fallos de las pruebas ni los hallazgos del revisor.
 
-| **Contexto** | Tono, restricciones o cualquier otro aspecto que defina la especificación: tono del texto visible, límites de la pila, preguntas abiertas |
+### 4. Reporte
 
-No escribas ningún archivo hasta que el usuario haya respondido las tres preguntas.
+Entrega al usuario:
+- Resumen por grupo: implementado / omitido.
+- Resultado de `npm test`, `npm run lint`, `npx tsc --noEmit` (y build si aplica).
+- **Lista de errores críticos**: cada uno con archivo y línea (`ruta:línea`), qué falla y por qué importa. Si no hay, dilo explícitamente. Separa los críticos de las observaciones menores (máximo unas pocas líneas).
+- Pasos de `validation.md` que requieren verificación manual.
 
-### 4. Lee los archivos de guía
+Pregunta al usuario si quiere que corrijas los errores; no los corrijas por tu cuenta ni marques la fase como `[x]` en el roadmap (eso ocurre solo tras validarla).
 
-Lee `specs/mission.md` y `specs/tech-stack.md` antes de redactar.
+## Notas
 
-### 5. Crear el directorio de especificaciones
-
-Nombre: `specs/AAAA-MM-DD-<nombre-de-la-característica>/` usando la fecha de hoy.
-
-#### `requirements.md`
-- Sección de alcance: qué se incluye y qué no; tabla de campos/datos si corresponde.
-- Sección de decisiones: decisiones tomadas y por qué (basado en las respuestas del usuario).
-- Sección de contexto: reglas de tono, punteros de pila, patrones existentes a seguir.
-
-#### `plan.md`
-- Grupos de tareas numerados: Base de datos → Componentes → Página y ruta → Navegación → Pruebas
-- Cada grupo tiene subtareas numeradas; los grupos deben poder implementarse de forma independiente.
-
-#### `validation.md`
-- Automatizado: `npm test`, `npm run lint` y `npx tsc --noEmit` pasan. Se requieren afirmaciones específicas
-- Manual: recorrido por el navegador, comportamiento del formulario, casos límite
-- Verificación del tono si la función tiene texto visible para el usuario
-- Definición de "terminado"
-
-## Restricciones de la pila
-
-Fuente de verdad: `specs/tech-stack.md`. Si la especificación contradice ese archivo, gana el archivo.
-
-- **Framework:** Next.js 16 (App Router) con React 19, Tailwind CSS 4, TypeScript estricto y sin `any`. Esta versión tiene cambios incompatibles: antes de proponer APIs o convenciones, lee la guía relevante en `node_modules/next/dist/docs/`.
-- **Base de datos:** MySQL con Prisma 7 (adaptador MariaDB). El cliente se importa del singleton `lib/db.ts`; el esquema vive en `prisma/schema.prisma` y las migraciones versionadas en `prisma/migrations/` (se crean con `npm run db:migrate`). Los secretos van solo en variables de entorno validadas en `lib/env.ts`; `.env*` fuera de git.
-- **Validación:** Zod en los límites del sistema (formularios, webhooks, API).
-- **Autenticación:** solo un rol admin (sesión propia); sin cuentas de visitantes.
-- **Pruebas:** Vitest + Testing Library. Todo código nuevo lleva pruebas.
-- **Dependencias:** no se añaden nuevas sin la aprobación del usuario.
-- **Componentes:** por defecto Server Components; `"use client"` solo cuando haga falta interactividad. Las mutaciones se hacen con Server Actions o Route Handlers.
-- **Estilo y público:** mantener el estilo visual actual, diseño responsive y móvil primero (conexiones variables, páginas ligeras). Interfaz solo en español.
-- **Tono:** honesto y objetivo, sin falsas urgencias ni reseñas inventadas (ver `specs/mission.md`).
+- Nunca declares algo implementado o verificado sin haberlo comprobado en el diff o en la salida de los comandos.
+- Si el plan contradice `specs/tech-stack.md` o la misión, detente en ese grupo y consulta al usuario.

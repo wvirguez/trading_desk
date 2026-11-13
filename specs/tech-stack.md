@@ -96,3 +96,4 @@ Todos los adaptadores implementan una interfaz común (`MarketDataAdapter`) que 
 
 - **2026-11-12:** versión inicial. Decisiones de la entrevista: monorepo, Claude + PydanticAI, OANDA para FX e índices, TimescaleDB, tipos generados con openapi-typescript, testing y CI.
 - **2026-11-12 (Bloque 0):** Python fijado en 3.12; Node 22+ (Vitest 5); PostgreSQL 16 local en el puerto 5432 (el PG14 pasa al 5433, apagado); CI con *service* Timescale; Playwright aplazado a la fase 4.
+- **2026-11-13 (Fase 1):** dependencias añadidas: `ccxt`, `structlog` y `httpx` (pasa de dev a runtime) en el backend, y `openapi-typescript` (dev) en el frontend. Precios y tamaños en `Decimal` (Pydantic) y `NUMERIC` (Postgres), nunca `float`; en JSON viajan como cadena. El contrato `backend/openapi.json` queda versionado y `frontend/types/api.ts` se genera con `npm run gen:api`; la CI falla si alguno de los dos no está al día.

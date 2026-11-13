@@ -1,31 +1,53 @@
 ## Prompt 1
-
-Find the next phase on specs/roadmap.md and make a branch, ask me about the feature spec.
-Create:
- - A new directory YYYY-MM-DD-feature-name under specs for this feature work
- - In there:
-  - `plan.md` as a series of numbered task groups.
-  - `requirements.md` for the scope, decisions, context
-  - `validation.md` for how to know the implementation succeeded and can be merged
-
-Refer to specs/mission.md and specs/tech-stack.md for guidance.
-
-Important: You *must* use your AskUserQuestion tool, grouped on these 3, before writing to disk.
+Implementa el Plan 
 
 ## Prompt 2
 
-Add a task group to the plan to have a minimal AgentClinic home page and update the rest of the feature spec to be in sync.
+Mira dentro del archivo @specs/mission.md y @specs/tech-stack para ver los detalles del proyecto.
+Mira en el archivo @specs/roadmap.md:
+- Implementa la Phase 1 usando un "new spawned" Hiku subagent.
+- Implementa la Phase 2 usando un "new spawned" Haiku subagent.
+
+No arregles nada después del subagente. Haz una revisión y proporciona una lista de errores críticos.
 
 ## Prompt 3
 
-Consulta la siguiente fase en `specs/roadmap.md`, crea una rama y pregúntame sobre la especificación de la funcionalidad.
-Crea:
-- Un nuevo directorio `YYYY-MM-DD-nombre-de-la-funcionalidad` dentro de `specs` para el trabajo de esta funcionalidad.
-- Dentro de él:
-- `plan.md`: una serie de grupos de tareas numerados. 
-- `requirements.md`: para el alcance, las decisiones y el contexto.
-- `validation.md`: para definir cómo determinar si la implementación ha tenido éxito y puede integrarse (merge).
+Mira dentro del archivo @specs/mission.md y @specs/tech-stack para ver los detalles del proyecto.
+Mira en el archivo @specs/roadmap.md:
+- Implementa cada tarea del `2026-11-05/plan.md` una a la vez de la Phase 1 y Phase 2.
 
-Consulta `specs/mission.md` y `specs/tech-stack.md` como referencia.
+No arregles nada después del subagente. Haz una revisión y proporciona una lista de errores críticos.
 
-Importante: Debes utilizar tu herramienta `AskUserQuestion` —centrándote en estos tres aspectos— antes de escribir cualquier archivo en el disco.
+## Prompt 4
+
+Mira dentro del archivo @specs/mission.md y @specs/tech-stack para ver los detalles del proyecto.
+Mira en el archivo @specs/roadmap.md para ver las fases del proyecto:
+- Implementa cada tarea del @specs/2026-11-05-frontpage-hub-productos/plan.md una a la vez.
+
+No arregles nada después del subagente. Haz una revisión y proporciona una lista de errores críticos. 
+
+## Prompt 5 
+Actualiza el archivo specs/2026-03-30-hello-hono/plan.md y la implementación de los componentes del diseño principal con un header/main/footer como tres componentes. Haz un archivo CSS, importalo, y enlazalo.
+
+###
+Update specs/2026-03-30-hello-hono/plan.md and implementation of a main layout component with a header/main footer as three subcomponents. Make a CSS file, import it, and link to it.
+
+## Prompt 6: Implementación final
+
+### Spanish
+Lee los archivos @specs/mission.md, @specs/tech-stack para ver los detalles del proyecto y el archivo @specs/roadmap.md para las fases del proyecto.
+
+Implementa el grupo de tareas del @specs/2026-11-06-esquema-inicial/plan.md una a la vez.
+
+No arregles nada después del subagente. Haz una revisión y proporciona una lista de errores críticos. 
+
+### English
+Look the files @specs/mission.md and @specs/tech-stack for project details, and the file @specs/roadmap.md for project phases.
+
+Implement the task group from @specs/2026-11-06-initial-schema/plan.md one task at a time.
+
+Do not fix anything after the subagent. Perform a review and provide a list of critical errors. 
+
+
+
+
