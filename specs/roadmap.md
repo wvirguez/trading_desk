@@ -12,7 +12,7 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 - [x] **0.1 Reestructurar el monorepo.** Mover la app Next.js a `frontend/` y crear `backend/` con `uv init`. *Hecho:* `npm run dev` (frontend) y `uv run python -c "import app"` (backend) funcionan.
 - [x] **0.2 Esqueleto FastAPI.** Crear `app/main.py`, `core/config.py` (pydantic-settings) y `GET /api/v1/health`. *Hecho:* un test de health en pytest pasa.
 - [x] **0.3 Tooling de calidad.** Configurar ruff, mypy, pytest, Vitest y ESLint. *Hecho:* los comandos `lint` y `test` pasan en vacío en ambos lados.
-- [ ] **0.4 CI mínima.** Workflow de GitHub Actions con lint, typecheck y tests para backend y frontend. *Hecho:* CI en verde en `main`.
+- [x] **0.4 CI mínima.** Workflow de GitHub Actions con lint, typecheck y tests para backend y frontend. *Hecho:* CI en verde en `main`.
 - [x] **0.5 Base de datos local.** Postgres 16 + TimescaleDB + `uuid-ossp`, con la sesión async de SQLAlchemy y Alembic inicializado. *Hecho:* `alembic upgrade head` funciona sobre una base de datos vacía.
 
 ## Fase 1 — Datos y esquemas *(TODO: Week 1)*
