@@ -14,6 +14,7 @@ from app.core.db import build_engine
 from app.market_data.base import MarketDataAdapter, MarketDataError
 from app.market_data.fake import FakeAdapter
 from app.market_data.yahoo import YahooAdapter
+from app.models.instrument import Instrument
 from app.models.ohlcv_bar import OhlcvBar
 from app.repositories import instruments as instruments_repo
 from app.schemas.candle import CandleSchema
@@ -126,7 +127,56 @@ async def test_cli_all_recorre_4_instrumentos_por_5_timeframes(
     stmt = select(OhlcvBar.instrument_id, OhlcvBar.timeframe).distinct()
     combos = (await db_session.execute(stmt)).all()
     assert len(combos) == 20
-    assert "20 de 20" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "Alcance: 20 combinaciones" in out
+    assert "20 de 20" in out
+
+
+async def test_cli_all_imprime_alcance(
+    sessionmaker: async_sessionmaker[AsyncSession], capsys: pytest.CaptureFixture[str]
+) -> None:
+    await run(
+        ["incremental", "--all", "--tf", "1d"],
+        sessionmaker=sessionmaker,
+        adapter_factory=_fake,
+        clock=_clock,
+    )
+    assert "Alcance: 4 combinaciones instrumento/timeframe" in capsys.readouterr().out
+
+
+async def test_cli_all_oanda_no_recorre_5m(
+    sessionmaker: async_sessionmaker[AsyncSession],
+    db_session: AsyncSession,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    await db_session.execute(
+        text("UPDATE instruments SET provider = 'OANDA' WHERE symbol <> 'BTC/USDT'")
+    )
+    await db_session.commit()
+    try:
+        since = (NOW - timedelta(days=2)).date().isoformat()
+        code = await run(
+            ["backfill", "--all", "--since", since],
+            sessionmaker=sessionmaker,
+            adapter_factory=_fake,
+            clock=_clock,
+        )
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "Alcance: 17 combinaciones" in out  # BTC 5 + 3 instrumentos OANDA x 4 = 17
+        stmt = (
+            select(OhlcvBar.timeframe)
+            .join(Instrument, Instrument.id == OhlcvBar.instrument_id)
+            .where(Instrument.symbol != "BTC/USDT")
+            .distinct()
+        )
+        tfs = {str(t) for t in (await db_session.execute(stmt)).scalars()}
+        assert tfs == {"15m", "1h", "4h", "1d"}
+    finally:
+        await db_session.execute(
+            text("UPDATE instruments SET provider = 'YAHOO' WHERE symbol <> 'BTC/USDT'")
+        )
+        await db_session.commit()
 
 
 async def test_cli_incremental_symbol_tf(
@@ -370,3 +420,24 @@ async def test_cli_all_omite_nas100_1h_y_4h_con_aviso(
     assert not any(t == "^NDX" for t, _ in calls)
     assert code == 0 and "ingesta_fallida" not in out
     assert "1 omitidas (no soportadas)" in out
+
+
+async def test_cli_incremental_yahoo_respuesta_vacia_sale_0_y_lo_dice(
+    sessionmaker: async_sessionmaker[AsyncSession], capsys: pytest.CaptureFixture[str]
+) -> None:
+    empty = pd.DataFrame({c: [] for c in ("Open", "High", "Low", "Close", "Volume")})
+
+    def factory(_: InstrumentSchema) -> YahooAdapter:
+        return YahooAdapter(lambda *_a: empty, now=lambda: INTRADAY_NOW)
+
+    code = await run(
+        ["incremental", "--symbol", "EUR/USD", "--tf", "15m"],
+        sessionmaker=sessionmaker,
+        adapter_factory=factory,
+        clock=lambda: INTRADAY_NOW,
+    )
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "no se descargó ninguna vela" in out
+    assert "Yahoo no devolvió velas para EURUSD=X 15m" in out
+    assert "0 con error" in out

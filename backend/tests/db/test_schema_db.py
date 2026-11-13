@@ -165,15 +165,21 @@ async def test_downgrade_0005_devuelve_oanda_y_upgrade_reaplica_yahoo(
         "XAU/USD": ("YAHOO", "GC=F"),
         "NAS100": ("YAHOO", "^NDX"),
     }
-    instrument_id = await _instrument_id(db_session)
-    await db_session.execute(
-        text(
-            "INSERT INTO ohlcv_bars (instrument_id, timeframe, ts, open, high, low, close, "
-            "volume) VALUES (:i, '5m', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1), "
-            "(:i, '1h', '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1)"
-        ),
-        {"i": instrument_id},
+    insert = text(
+        "INSERT INTO ohlcv_bars (instrument_id, timeframe, ts, open, high, low, close, volume) "
+        "VALUES (:i, :tf, '2026-01-01T00:00:00Z', 100, 110, 90, 98, 1)"
     )
+    rows = [
+        ("BTC/USDT", "5m"),
+        ("BTC/USDT", "1h"),
+        ("EUR/USD", "1h"),
+        ("XAU/USD", "4h"),
+        ("NAS100", "1d"),
+        ("NAS100", "5m"),
+    ]
+    for symbol, tf in rows:
+        i = await _instrument_id(db_session, symbol)
+        await db_session.execute(insert, {"i": i, "tf": tf})
     await db_session.commit()
     try:
         _alembic("downgrade", "0004_trade_signals")
@@ -186,9 +192,14 @@ async def test_downgrade_0005_devuelve_oanda_y_upgrade_reaplica_yahoo(
         }
         await db_session.rollback()
         remaining = await db_session.execute(
-            text("SELECT timeframe FROM ohlcv_bars ORDER BY timeframe")
+            text(
+                "SELECT i.symbol, b.timeframe FROM ohlcv_bars b "
+                "JOIN instruments i ON i.id = b.instrument_id ORDER BY 1, 2"
+            )
         )
-        assert [r.timeframe for r in remaining] == ["1h"]  # las filas 5m se limpian
+        # Se descartan todas las velas de los 3 instrumentos devueltos a OANDA (datos de Yahoo)
+        # y las 5m de BTC/USDT (el CHECK ya no las admite); su vela 1h se conserva.
+        assert [(r.symbol, r.timeframe) for r in remaining] == [("BTC/USDT", "1h")]
         await db_session.rollback()
         with pytest.raises(IntegrityError, match="ck_instruments_provider"):
             await db_session.execute(

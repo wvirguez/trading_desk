@@ -6,8 +6,12 @@
   Ojo: `GC=F` es el futuro continuo del oro, no el spot (`XAUUSD=X` no devuelve datos en Yahoo).
 
 Downgrade: devuelve los 3 instrumentos a `OANDA` con sus símbolos originales y restaura los
-CHECK anteriores. Como `5m` dejaría de ser válido, ANTES de restaurar el CHECK se borran las
-filas con `timeframe = '5m'` de `ohlcv_bars` y `trade_signals` (limpieza explícita, no falla).
+CHECK anteriores. Como los datos obtenidos de Yahoo (GC=F es un futuro, 4h remuestreadas, etc.)
+no son compatibles con OANDA, el downgrade los DESCARTA: borra TODAS las filas de `ohlcv_bars`
+de EUR/USD, XAU/USD y NAS100 (cualquier timeframe), para que un `incremental` posterior desde
+OANDA no mezcle fuentes. BTC/USDT (Binance) no se toca. Además, como `5m` dejaría de ser válido,
+ANTES de restaurar el CHECK se borran las filas `5m` de `trade_signals` (limpieza explícita) y
+las `5m` restantes de `ohlcv_bars` (BTC/USDT).
 
 Revision ID: 0005_yahoo_5m
 Revises: 0004_trade_signals
@@ -59,6 +63,14 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    symbols = list(_TICKERS)
+    op.get_bind().execute(
+        sa.text(
+            "DELETE FROM ohlcv_bars WHERE instrument_id IN "
+            "(SELECT id FROM instruments WHERE symbol IN :symbols)"
+        ).bindparams(sa.bindparam("symbols", expanding=True)),
+        {"symbols": symbols},
+    )
     _set_provider("OANDA", 0)
     op.execute("DELETE FROM ohlcv_bars WHERE timeframe = '5m'")
     op.execute("DELETE FROM trade_signals WHERE timeframe = '5m'")

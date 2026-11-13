@@ -344,12 +344,19 @@ async def test_error_de_red_es_market_data_error(y_eurusd: InstrumentSchema) -> 
         await _adapter(dl).fetch_ohlcv(y_eurusd, Timeframe.M5, utc(2024, 1, 8), utc(2024, 1, 9))
 
 
-async def test_respuesta_vacia_es_market_data_error(y_eurusd: InstrumentSchema) -> None:
+async def test_respuesta_vacia_devuelve_lista_vacia_con_aviso(y_eurusd: InstrumentSchema) -> None:
     empty = pd.DataFrame({c: [] for c in ("Open", "High", "Low", "Close", "Volume")})
-    with pytest.raises(MarketDataError, match="vacía"):
-        await _adapter(FakeDownloader(empty)).fetch_ohlcv(
-            y_eurusd, Timeframe.M5, utc(2024, 1, 8), utc(2024, 1, 9)
-        )
+    adapter = _adapter(FakeDownloader(empty))
+    candles = await adapter.fetch_ohlcv(y_eurusd, Timeframe.M5, utc(2024, 1, 8), utc(2024, 1, 9))
+    assert candles == []
+    messages = [n.message for n in adapter.notices]
+    assert len(messages) == 1
+    assert "no devolvió velas" in messages[0]
+    assert "EURUSD=X" in messages[0]
+    assert "5m" in messages[0]
+    # el aviso se reinicia en la llamada siguiente
+    await adapter.fetch_ohlcv(y_eurusd, Timeframe.M5, utc(2024, 1, 9), utc(2024, 1, 9))
+    assert adapter.empty_notice is None
 
 
 async def test_columnas_faltantes_es_market_data_error(y_eurusd: InstrumentSchema) -> None:

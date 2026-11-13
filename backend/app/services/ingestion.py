@@ -27,6 +27,16 @@ class IngestResult(BaseModel):
     notices: list[str] = []  # avisos del proveedor (D30, D49), en español
 
 
+# Timeframes que recorre `--all` por proveedor: solo los que tienen horizonte configurado.
+# OANDA no tiene horizonte propio de 5m (usaría el de Binance), así que `--all` no lo incluye;
+# sigue disponible pidiéndolo explícitamente con `--tf 5m`.
+DEFAULT_TIMEFRAMES: dict[Provider, tuple[Timeframe, ...]] = {
+    Provider.BINANCE: (Timeframe.M5, Timeframe.M15, Timeframe.H1, Timeframe.H4, Timeframe.D1),
+    Provider.YAHOO: (Timeframe.M5, Timeframe.M15, Timeframe.H1, Timeframe.H4, Timeframe.D1),
+    Provider.OANDA: (Timeframe.M15, Timeframe.H1, Timeframe.H4, Timeframe.D1),
+}
+
+
 def default_since(
     tf: Timeframe,
     now: datetime,

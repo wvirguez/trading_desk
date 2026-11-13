@@ -14,8 +14,14 @@ El 4h se construye desde 1h y un bloque cerrado se emite con las velas de 1h que
 (al menos una). Si alguno tuvo menos de 4, se anota en `partial_notice`
 (`PartialBlocksNotice`, o `None`).
 
-Ambos atributos se reinician en cada `fetch_ohlcv`; la propiedad `notices` los junta (el
-servicio la lee tras la llamada) y cada aviso trae su `message` en español. No se usa
+Respuesta vacía (D43)
+---------------------
+Una respuesta sin filas no es un error (un incremental en fin de semana la recibe de forma
+legítima): se devuelve `[]` y se anota `empty_notice` (`EmptyResponseNotice`). Red, formato y
+columnas ausentes siguen siendo `MarketDataError`.
+
+Todos los atributos de aviso se reinician en cada `fetch_ohlcv`; la propiedad `notices` los junta
+(el servicio la lee tras la llamada) y cada aviso trae su `message` en español. No se usa
 excepción ni log: la llamada devuelve las velas disponibles y los avisos viajan aparte.
 
 Combinaciones no soportadas (D48)
@@ -118,6 +124,24 @@ class PartialBlocksNotice:
         )
 
 
+@dataclass(frozen=True)
+class EmptyResponseNotice:
+    """Yahoo respondió sin velas (D43): mercado cerrado, sin datos nuevos o rechazo del rango."""
+
+    ticker: str
+    timeframe: Timeframe
+    start: datetime
+    end: datetime
+
+    @property
+    def message(self) -> str:
+        return (
+            f"Yahoo no devolvió velas para {self.ticker} {self.timeframe.value} entre "
+            f"{self.start:%Y-%m-%d %H:%M} y {self.end:%Y-%m-%d %H:%M} UTC (mercado cerrado o "
+            "sin datos nuevos; un bloqueo de Yahoo se ve igual)."
+        )
+
+
 def yahoo_downloader(ticker: str, interval: str, start: datetime, end: datetime) -> pd.DataFrame:
     """Descargador real (bloqueante): precios sin ajustar, sin dividendos ni splits."""
     frame: pd.DataFrame = yf.Ticker(ticker).history(
@@ -134,8 +158,8 @@ def yahoo_downloader(ticker: str, interval: str, start: datetime, end: datetime)
 class YahooAdapter:
     """Velas OHLCV de Yahoo Finance. Sin credenciales; el descargador es inyectable (D34, D35).
 
-    `history_notice` y `partial_notice` describen la última llamada; `notices` los junta
-    (véase el docstring del módulo).
+    `history_notice`, `partial_notice` y `empty_notice` describen la última llamada; `notices`
+    los junta (véase el docstring del módulo).
     """
 
     provider = Provider.YAHOO
@@ -145,6 +169,7 @@ class YahooAdapter:
         self._now = now
         self.history_notice: HistoryNotice | None = None
         self.partial_notice: PartialBlocksNotice | None = None
+        self.empty_notice: EmptyResponseNotice | None = None
 
     @property
     def notices(self) -> list[NoticeLike]:
@@ -153,6 +178,8 @@ class YahooAdapter:
             found.append(self.history_notice)
         if self.partial_notice is not None:
             found.append(self.partial_notice)
+        if self.empty_notice is not None:
+            found.append(self.empty_notice)
         return found
 
     async def fetch_ohlcv(
@@ -174,6 +201,7 @@ class YahooAdapter:
         now = self._now()
         self.history_notice = None
         self.partial_notice = None
+        self.empty_notice = None
         eff_start = self._clamp_start(timeframe, start, now)
         if eff_start >= end:
             return []
@@ -184,6 +212,11 @@ class YahooAdapter:
             req_start = timeframe.floor(eff_start)
             req_end = timeframe.floor(end - timedelta(microseconds=1)) + timeframe.duration
         frame = await self._download(instrument, timeframe, req_start, req_end)
+        if frame is None:  # D43: respuesta vacía = sin velas, con aviso; no es un error
+            self.empty_notice = EmptyResponseNotice(
+                instrument.provider_symbol, timeframe, eff_start, end
+            )
+            return []
 
         if timeframe is Timeframe.H4:
             hourly = self._intraday_candles(instrument, Timeframe.H1, frame)
@@ -216,7 +249,7 @@ class YahooAdapter:
 
     async def _download(
         self, instrument: InstrumentSchema, timeframe: Timeframe, start: datetime, end: datetime
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | None:
         try:
             frame = await asyncio.to_thread(
                 self._downloader, instrument.provider_symbol, _INTERVALS[timeframe], start, end
@@ -224,10 +257,7 @@ class YahooAdapter:
         except Exception as exc:
             raise MarketDataError(f"Fallo al consultar Yahoo: {type(exc).__name__}") from exc
         if frame is None or len(frame) == 0:
-            raise MarketDataError(
-                f"Yahoo devolvió una respuesta vacía para {instrument.provider_symbol} "
-                f"({_INTERVALS[timeframe]})"
-            )
+            return None
         missing = [c for c in _COLUMNS if c not in frame.columns]
         if missing:
             raise MarketDataError(f"Respuesta de Yahoo sin las columnas: {', '.join(missing)}")
