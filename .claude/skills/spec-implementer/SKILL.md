@@ -1,6 +1,6 @@
 ---
 name: spec-implementer
-description: Implementa el plan de una especificación de este proyecto. Recibe la ruta de un plan.md (o del directorio de la spec en specs/), lee la misión, el stack y el roadmap, implementa los grupos de tareas uno a uno con subagentes y, al terminar, hace una revisión y entrega una lista de errores críticos sin corregirlos. Se invoca manualmente (/spec-implementer specs/AAAA-MM-DD-nombre/plan.md).
+description: Implementa el plan de una especificación de este proyecto. Recibe la ruta de un plan.md (o del directorio de la spec en specs/), lee la misión, el stack y el roadmap, implementa los grupos de tareas uno a uno con subagentes y, al terminar, hace una revisión y entrega una lista de errores críticos sin corregirlos, si no hay errores se marca como [x]. Se invoca manualmente (/spec-implementer specs/AAAA-MM-DD-nombre/plan.md).
 disable-model-invocation: true
 argument-hint: specs/AAAA-MM-DD-<nombre>/plan.md
 ---
@@ -26,7 +26,7 @@ Confirma que estás en la rama de la fase (`phase-N-...`); si estás en `main`, 
 Los grupos del `plan.md` (Dependencias y configuración → Esquemas → Base de datos → Lógica de dominio → Servicios y endpoints → Tipos TS → UI → CI y documentación) se implementan **secuencialmente, de uno en uno**. Si un grupo se divide en subgrupos (4A, 4B…), cada subgrupo cuenta como un grupo.
 
 1. Lanza un subagente (herramienta `Agent`, tipo `general-purpose`) por grupo. En el prompt incluye: la ruta de la spec, el texto exacto del grupo y sus subtareas, las restricciones de la pila (abajo) y qué grupos ya están hechos. No lances grupos en paralelo.
-2. Al volver el subagente, comprueba brevemente que realizó lo pedido (`git status`/`git diff --stat` y, si procede, un comando de verificación) y pasa al siguiente grupo. No corrijas nada a mano entre grupos salvo que el siguiente grupo no pueda avanzar sin ello; si ocurre, repórtalo.
+2. Al volver el subagente, comprueba brevemente que realizó lo pedido (`git status`/`git diff --stat` y, si procede, un comando de verificación) y pasa al siguiente grupo. Cada subtarea del `plan.md` que ese grupo haya implementado (y que hayas comprobado) se marca como `[x]` al inicio de su línea en el propio `plan.md` (p. ej. `[x] 1.1. ...`); las que no se implementen u omitan se dejan como `[ ]`. Esto afecta solo al `plan.md`, no al roadmap. No corrijas nada a mano entre grupos salvo que el siguiente grupo no pueda avanzar sin ello; si ocurre, repórtalo.
 3. Un grupo sin cambios ("Ninguno", "Sin cambios") se omite y se anota.
 4. Tareas del plan que no se pueden hacer sin el usuario (aprobar dependencias, smoke manual, PR, CI, marcar el roadmap) se omiten y se anotan en el reporte.
 

@@ -48,6 +48,10 @@ Implement the task group from @specs/2026-11-06-initial-schema/plan.md one task 
 
 Do not fix anything after the subagent. Perform a review and provide a list of critical errors. 
 
+### Prompt 7: 
+
+Ejecuta /spec-implementer para la spec de 2026-11-15-orqestation-multiagente/plan.md. Al terminar, invoca inmediatamente /validar. Si la validación devuelve estado RECHAZADO, corrige los puntos indicados y vuelve a correr /validar hasta que sea APROBADO (máximo 2 reintentos).
+
 
 
 

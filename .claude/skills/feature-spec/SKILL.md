@@ -46,7 +46,7 @@ Nombre: `specs/AAAA-MM-DD-<nombre-de-la-característica>/`, con la fecha de hoy.
 - **Preguntas abiertas y riesgos.**
 
 #### `plan.md`
-- Grupos de tareas numerados, en este orden y omitiendo los que no apliquen:
+- Grupos de tareas numerados con un elemento `[ ]`, en este orden y omitiendo los que no apliquen:
   1. Dependencias y configuración.
   2. Esquemas Pydantic.
   3. Base de datos: modelos, migraciones de Alembic y repositorios.
