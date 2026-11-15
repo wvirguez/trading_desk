@@ -1,8 +1,9 @@
-"""Modelo ORM de `trade_signals` (mínimo; el razonamiento llega en la Fase 3)."""
+"""Modelo ORM de `trade_signals` (ampliado en la Fase 3 con el razonamiento, D96)."""
 
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -15,12 +16,12 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
 from app.models.checks import enum_check
-from app.schemas.enums import Direction, SignalStatus, Timeframe
+from app.schemas.enums import Direction, RegimeLabel, SignalStatus, Timeframe
 
 
 class TradeSignal(Base):
@@ -29,7 +30,9 @@ class TradeSignal(Base):
         CheckConstraint(enum_check("timeframe", Timeframe), name="ck_trade_signals_timeframe"),
         CheckConstraint(enum_check("direction", Direction), name="ck_trade_signals_direction"),
         CheckConstraint(enum_check("status", SignalStatus), name="ck_trade_signals_status"),
+        CheckConstraint(enum_check("regime", RegimeLabel), name="ck_trade_signals_regime"),
         Index("ix_trade_signals_status_created_at", "status", "created_at"),
+        Index("ix_trade_signals_analysis_id", "analysis_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -46,3 +49,10 @@ class TradeSignal(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    analysis_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    rr: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    units: Mapped[Decimal | None] = mapped_column(Numeric(24, 10), nullable=True)
+    risk_amount: Mapped[Decimal | None] = mapped_column(Numeric(24, 10), nullable=True)
+    regime: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    veto_reasons: Mapped[list[Any]] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))

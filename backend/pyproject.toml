@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=2.5.4",
     "polars>=2.1.0",
     "pydantic>=2.14.3",
+    "pydantic-ai-slim[anthropic,google]>=2.68.0",
     "pydantic-settings>=2.16.2",
     "sqlalchemy[asyncio]>=2.1.8",
     "statsmodels>=0.15.0",

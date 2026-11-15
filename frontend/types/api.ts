@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/agents/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Analyze */
+        post: operations["post_analyze_api_v1_agents_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -55,10 +72,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/signals/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Active Signals
+         * @description Señales `APPROVED`, de la más reciente a la más antigua.
+         */
+        get: operations["get_active_signals_api_v1_signals_active_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AgentReportSchema */
+        AgentReportSchema: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            guards?: components["schemas"]["GuardDecision"] | null;
+            outcome: components["schemas"]["AnalysisOutcome"];
+            proposal?: components["schemas"]["ProposedSignal"] | null;
+            quant?: components["schemas"]["QuantAlphaReport"] | null;
+            risk_verdict?: components["schemas"]["RiskVerdict"] | null;
+            signal?: components["schemas"]["TradeSignalSchema"] | null;
+            structure?: components["schemas"]["MarketStructureReport"] | null;
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+            usage: components["schemas"]["StepUsage"];
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** AnalysisCompleted */
+        AnalysisCompleted: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "analysis_completed";
+            report: components["schemas"]["AgentReportSchema"];
+            /** Seq */
+            seq: number;
+        };
+        /**
+         * AnalysisEventEnvelope
+         * @description Envoltorio nombrado de la unión discriminada, solo para publicar el tipo en OpenAPI (D108).
+         *
+         *     El protocolo SSE no cambia: cada ``data:`` sigue siendo el JSON de UN evento (no del
+         *     envoltorio); ``RootModel`` serializa exactamente como la unión.
+         */
+        AnalysisEventEnvelope: components["schemas"]["AnalysisStarted"] | components["schemas"]["StepStarted"] | components["schemas"]["StepCompleted"] | components["schemas"]["StepFailed"] | components["schemas"]["AnalysisCompleted"] | components["schemas"]["AnalysisFailed"];
+        /** AnalysisFailed */
+        AnalysisFailed: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /** Error */
+            error: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "analysis_failed";
+            /** Seq */
+            seq: number;
+            step?: components["schemas"]["AnalysisStep"] | null;
+        };
+        /**
+         * AnalysisOutcome
+         * @enum {string}
+         */
+        AnalysisOutcome: "SIGNAL_APPROVED" | "SIGNAL_REJECTED" | "NO_TRADE";
+        /** AnalysisStarted */
+        AnalysisStarted: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "analysis_started";
+            /** Seq */
+            seq: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /** Timeframes */
+            timeframes: components["schemas"]["Timeframe"][];
+        };
+        /**
+         * AnalysisStep
+         * @enum {string}
+         */
+        AnalysisStep: "STRUCTURE" | "QUANT" | "PROPOSAL" | "GUARDS" | "RISK_AUDIT";
+        /** AnalyzeRequest */
+        AnalyzeRequest: {
+            /** Symbol */
+            symbol: string;
+            /** @default 1h */
+            timeframe: components["schemas"]["Timeframe"];
+            /** Timeframes */
+            timeframes?: components["schemas"]["Timeframe"][];
+        };
+        /**
+         * AssetClass
+         * @enum {string}
+         */
+        AssetClass: "CRYPTO" | "FX" | "METAL" | "INDEX";
+        /**
+         * AuditDecision
+         * @enum {string}
+         */
+        AuditDecision: "APPROVE" | "VETO";
         /** BacktestConfig */
         "BacktestConfig-Input": {
             /**
@@ -158,6 +312,11 @@ export interface components {
             /** Win Rate */
             win_rate: number;
         };
+        /**
+         * Bias
+         * @enum {string}
+         */
+        Bias: "BULLISH" | "BEARISH" | "NEUTRAL";
         /** CandleSchema */
         CandleSchema: {
             /** Close */
@@ -179,6 +338,11 @@ export interface components {
             /** Volume */
             volume: string;
         };
+        /**
+         * Direction
+         * @enum {string}
+         */
+        Direction: "LONG" | "SHORT";
         /** EquityPoint */
         EquityPoint: {
             /** Equity */
@@ -188,6 +352,18 @@ export interface components {
              * Format: date-time
              */
             ts: string;
+        };
+        /** GuardDecision */
+        GuardDecision: {
+            /** Approved */
+            approved: boolean;
+            /** Messages */
+            messages: string[];
+            /** Reasons */
+            reasons: components["schemas"]["VetoReason"][];
+            /** Rr */
+            rr?: string | null;
+            size?: components["schemas"]["PositionSizeResult"] | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -219,11 +395,265 @@ export interface components {
              */
             version: string;
         };
+        JsonValue: unknown;
+        /** KellyResult */
+        KellyResult: {
+            /** Capped */
+            capped: boolean;
+            /** Fraction */
+            fraction: number;
+            /** Full Kelly */
+            full_kelly: number;
+        };
+        /**
+         * MarketStructureReport
+         * @description Lectura multi-timeframe: exige al menos 2 marcos distintos entre sí.
+         */
+        MarketStructureReport: {
+            entry_timeframe: components["schemas"]["Timeframe"];
+            htf_alignment: components["schemas"]["Bias"];
+            /** Invalidation Level */
+            invalidation_level?: string | null;
+            /** Reasoning */
+            reasoning: string;
+            /** Symbol */
+            symbol: string;
+            /** Timeframes */
+            timeframes: components["schemas"]["TimeframeStructure"][];
+            /** Zone Ts */
+            zone_ts?: string | null;
+        };
+        /**
+         * Playbook
+         * @enum {string}
+         */
+        Playbook: "MEAN_REVERSION" | "TREND_FOLLOWING" | "NO_TRADE";
+        /** PositionSizeResult */
+        PositionSizeResult: {
+            /** Notional */
+            notional: string;
+            /** Risk Amount */
+            risk_amount: string;
+            /** Risk Pct */
+            risk_pct: string;
+            /** Stop Distance */
+            stop_distance: string;
+            /** Units */
+            units: string;
+        };
+        /**
+         * ProposedSignal
+         * @description Propuesta determinista (sin tamaño ni estado). Niveles coherentes con la dirección.
+         */
+        ProposedSignal: {
+            direction: components["schemas"]["Direction"];
+            /** Entry */
+            entry: string;
+            /** Rr */
+            rr: string;
+            /** Source */
+            source: string;
+            /** Stop Loss */
+            stop_loss: string;
+            /** Symbol */
+            symbol: string;
+            /** Take Profit */
+            take_profit: string;
+            timeframe: components["schemas"]["Timeframe"];
+        };
+        /** QuantAlphaReport */
+        QuantAlphaReport: {
+            kelly?: components["schemas"]["KellyResult"] | null;
+            playbook: components["schemas"]["Playbook"];
+            /** Reasoning */
+            reasoning: string;
+            regime: components["schemas"]["RegimeLabel"];
+            stats: components["schemas"]["RegimeStats"];
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+        };
+        /**
+         * RegimeLabel
+         * @enum {string}
+         */
+        RegimeLabel: "MEAN_REVERTING" | "TRENDING" | "HIGH_VOLATILITY_NOISE";
+        /** RegimeStats */
+        RegimeStats: {
+            /** Adf Pvalue */
+            adf_pvalue: number;
+            /** Hurst */
+            hurst: number;
+            /** N Obs */
+            n_obs: number;
+            /** Volatility Ratio */
+            volatility_ratio: number;
+            /** Zscore */
+            zscore: number;
+        };
+        /** RiskVerdict */
+        RiskVerdict: {
+            /** Concerns */
+            concerns: string[];
+            decision: components["schemas"]["AuditDecision"];
+            deterministic: components["schemas"]["GuardDecision"];
+            /** Rationale */
+            rationale: string;
+        };
+        /**
+         * SignalStatus
+         * @enum {string}
+         */
+        SignalStatus: "PENDING" | "APPROVED" | "REJECTED" | "EXECUTED";
+        /** StepCompleted */
+        StepCompleted: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "step_completed";
+            /** Output */
+            output: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Seq */
+            seq: number;
+            step: components["schemas"]["AnalysisStep"];
+            usage: components["schemas"]["StepUsage"];
+        };
+        /** StepFailed */
+        StepFailed: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /** Error */
+            error: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "step_failed";
+            /** Seq */
+            seq: number;
+            step: components["schemas"]["AnalysisStep"];
+            usage?: components["schemas"]["StepUsage"] | null;
+        };
+        /** StepStarted */
+        StepStarted: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "step_started";
+            /** Seq */
+            seq: number;
+            step: components["schemas"]["AnalysisStep"];
+        };
+        /** StepUsage */
+        StepUsage: {
+            /** Cost Usd */
+            cost_usd?: string | null;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Latency Ms
+             * @default 0
+             */
+            latency_ms: number;
+            /** Model */
+            model?: string | null;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+        };
+        /**
+         * StructureEventType
+         * @enum {string}
+         */
+        StructureEventType: "BOS" | "CHOCH";
         /**
          * Timeframe
          * @enum {string}
          */
         Timeframe: "5m" | "15m" | "1h" | "4h" | "1d";
+        /** TimeframeStructure */
+        TimeframeStructure: {
+            bias: components["schemas"]["Bias"];
+            /** Comment */
+            comment: string;
+            /** Key Levels */
+            key_levels: string[];
+            last_event?: components["schemas"]["StructureEventType"] | null;
+            /** Open Fvg Ts */
+            open_fvg_ts: string[];
+            timeframe: components["schemas"]["Timeframe"];
+        };
+        /**
+         * TradeSignalSchema
+         * @description Señal canónica persistida.
+         *
+         *     Invariantes:
+         *     - LONG: stop_loss < entry < take_profit; SHORT: take_profit < entry < stop_loss.
+         *     - APPROVED: `size` presente y `veto_reasons` vacío.
+         *     - REJECTED: `veto_reasons` no vacío (veto determinista) O, si está vacío, `rationale`
+         *       debe contener `AUDITOR_REJECTION_MARKER` (rechazo del auditor, que no genera
+         *       motivos `VetoReason`).
+         *     - PENDING y EXECUTED no imponen reglas adicionales.
+         */
+        TradeSignalSchema: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            asset_class: components["schemas"]["AssetClass"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            direction: components["schemas"]["Direction"];
+            /** Entry */
+            entry: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rationale */
+            rationale: string;
+            regime: components["schemas"]["RegimeLabel"];
+            /** Rr */
+            rr: string;
+            size?: components["schemas"]["PositionSizeResult"] | null;
+            status: components["schemas"]["SignalStatus"];
+            /** Stop Loss */
+            stop_loss: string;
+            /** Symbol */
+            symbol: string;
+            /** Take Profit */
+            take_profit: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /** Veto Reasons */
+            veto_reasons: components["schemas"]["VetoReason"][];
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -237,6 +667,11 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /**
+         * VetoReason
+         * @enum {string}
+         */
+        VetoReason: "RR_BELOW_MIN" | "RISK_PER_TRADE_EXCEEDED" | "DAILY_LOSS_LIMIT" | "OPEN_RISK_LIMIT" | "CORRELATED_RISK_LIMIT" | "SIZE_BELOW_LOT" | "INVALID_LEVELS";
     };
     responses: never;
     parameters: never;
@@ -246,6 +681,51 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    post_analyze_api_v1_agents_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeRequest"];
+            };
+        };
+        responses: {
+            /** @description Flujo `text/event-stream`: un evento `data: <json>` por `AnalysisEvent`. Los fallos durante el análisis llegan como `analysis_failed` (HTTP 200). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["AnalysisEventEnvelope"];
+                };
+            };
+            /** @description Instrumento desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cuerpo inválido o datos insuficientes */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agentes no configurados (falta la clave del proveedor activo o AGENT_MODEL) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -353,6 +833,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_active_signals_api_v1_signals_active_get: {
+        parameters: {
+            query?: {
+                /** @description Filtra por clase de activo */
+                asset_class?: components["schemas"]["AssetClass"] | null;
+                /** @description Máximo de señales */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TradeSignalSchema"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

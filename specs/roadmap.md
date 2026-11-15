@@ -29,29 +29,29 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 
 ## Fase 2 — Motor cuantitativo y núcleo de riesgo determinista *(TODO: Week 2)*
 
-- [ ] **2.1 Features básicas.** Rendimientos logarítmicos, volatilidad móvil y ATR (polars). *Hecho:* tests contra valores de referencia.
-- [ ] **2.2 Estadísticos de régimen.** Z-score, exponente de Hurst y test ADF. *Hecho:* tests con series sintéticas (random walk, serie con reversión a la media y serie con tendencia).
-- [ ] **2.3 Estructura de mercado determinista.** Swings, BOS, CHoCH y detección de FVG. *Hecho:* fixtures de velas con resultados esperados.
-- [ ] **2.4 Clasificador de régimen.** `MEAN_REVERTING`, `TRENDING` y `HIGH_VOLATILITY_NOISE` a partir de 2.1–2.2.
-- [ ] **2.5 Position sizing.** Tamaño a partir del riesgo %, la distancia al stop, el tick size y el lot size del instrumento. *Hecho:* tests de propiedades con hypothesis (nunca se supera el 1 %).
-- [ ] **2.6 Kelly fraccional y riesgo de ruina.** Fórmulas puras con límites. *Hecho:* tests de propiedades.
-- [ ] **2.7 Guardas de cartera.** Pérdida diaria del 3 %, exposición abierta y matriz de correlación, con veto por R:R < 1,8.
-- [ ] **2.8 Backtester vectorizado.** `BacktestConfig` → `BacktestMetricsSchema` (Sharpe, max drawdown, win rate, expectancy, curva de capital).
-- [ ] **2.9 Tests golden de determinismo.** Datasets fijos versionados con métricas exactas esperadas.
-- [ ] **2.10 Endpoint `POST /quant/backtest`** y modelo `strategies` (parámetros en JSONB y métricas).
+- [x] **2.1 Features básicas.** Rendimientos logarítmicos, volatilidad móvil y ATR (polars). *Hecho:* tests contra valores de referencia.
+- [x] **2.2 Estadísticos de régimen.** Z-score, exponente de Hurst y test ADF. *Hecho:* tests con series sintéticas (random walk, serie con reversión a la media y serie con tendencia).
+- [x] **2.3 Estructura de mercado determinista.** Swings, BOS, CHoCH y detección de FVG. *Hecho:* fixtures de velas con resultados esperados.
+- [x] **2.4 Clasificador de régimen.** `MEAN_REVERTING`, `TRENDING` y `HIGH_VOLATILITY_NOISE` a partir de 2.1–2.2.
+- [x] **2.5 Position sizing.** Tamaño a partir del riesgo %, la distancia al stop, el tick size y el lot size del instrumento. *Hecho:* tests de propiedades con hypothesis (nunca se supera el 1 %).
+- [x] **2.6 Kelly fraccional y riesgo de ruina.** Fórmulas puras con límites. *Hecho:* tests de propiedades.
+- [x] **2.7 Guardas de cartera.** Pérdida diaria del 3 %, exposición abierta y matriz de correlación, con veto por R:R < 1,8.
+- [x] **2.8 Backtester vectorizado.** `BacktestConfig` → `BacktestMetricsSchema` (Sharpe, max drawdown, win rate, expectancy, curva de capital).
+- [x] **2.9 Tests golden de determinismo.** Datasets fijos versionados con métricas exactas esperadas.
+- [x] **2.10 Endpoint `POST /quant/backtest`** y modelo `strategies` (parámetros en JSONB y métricas).
 
 ## Fase 3 — Orquestación multiagente *(TODO: Week 3)*
 
-- [ ] **3.1 Esquemas de salida de agentes.** `MarketStructureReport`, `QuantAlphaReport`, `RiskVerdict` y `TradeSignalSchema` canónico.
-- [ ] **3.2 Modelo `agent_analyses`.** Solo inserción, con traza JSONB, modelo, tokens, coste y latencia.
-- [ ] **3.3 Cliente PydanticAI + Claude.** Configuración del modelo y `TestModel` para la CI. *Hecho:* un agente "eco" con salida tipada pasa los tests.
-- [ ] **3.4 `MarketStructureAgent`.** Herramientas deterministas (2.3) más síntesis multi-timeframe (15m, 1H, 4H, 1D).
-- [ ] **3.5 `QuantAlphaAgent`.** Herramientas 2.1, 2.2, 2.4 y 2.6, con interpretación del régimen.
-- [ ] **3.6 Construcción de la señal propuesta.** Combina 3.4 y 3.5 en una propuesta de entrada, SL y TP. El tamaño de posición lo calcula siempre 2.5, nunca el LLM.
-- [ ] **3.7 Veto determinista + `RiskAuditorAgent`.** Primero se aplican las guardas 2.7 en código y después el agente emite APPROVE/VETO con su justificación.
-- [ ] **3.8 Orquestador.** Pipeline async con persistencia de cada paso en `agent_analyses` y de la señal resultante en `trade_signals`.
-- [ ] **3.9 `POST /agents/analyze` con SSE.** Stream de eventos por paso más el `AgentReportSchema` final.
-- [ ] **3.10 `GET /signals/active`.** Señales aprobadas filtrables por `asset_class`.
+- [x] **3.1 Esquemas de salida de agentes.** `MarketStructureReport`, `QuantAlphaReport`, `RiskVerdict` y `TradeSignalSchema` canónico.
+- [x] **3.2 Modelo `agent_analyses`.** Solo inserción, con traza JSONB, modelo, tokens, coste y latencia.
+- [x] **3.3 Cliente PydanticAI + Claude.** Configuración del modelo y `TestModel` para la CI. *Hecho:* un agente "eco" con salida tipada pasa los tests.
+- [x] **3.4 `MarketStructureAgent`.** Herramientas deterministas (2.3) más síntesis multi-timeframe (15m, 1H, 4H, 1D).
+- [x] **3.5 `QuantAlphaAgent`.** Herramientas 2.1, 2.2, 2.4 y 2.6, con interpretación del régimen.
+- [x] **3.6 Construcción de la señal propuesta.** Combina 3.4 y 3.5 en una propuesta de entrada, SL y TP. El tamaño de posición lo calcula siempre 2.5, nunca el LLM.
+- [x] **3.7 Veto determinista + `RiskAuditorAgent`.** Primero se aplican las guardas 2.7 en código y después el agente emite APPROVE/VETO con su justificación.
+- [x] **3.8 Orquestador.** Pipeline async con persistencia de cada paso en `agent_analyses` y de la señal resultante en `trade_signals`.
+- [x] **3.9 `POST /agents/analyze` con SSE.** Stream de eventos por paso más el `AgentReportSchema` final.
+- [x] **3.10 `GET /signals/active`.** Señales aprobadas filtrables por `asset_class`.
 
 ## Fase 4 — Terminal UI en Next.js *(TODO: Week 4)*
 

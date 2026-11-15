@@ -93,3 +93,34 @@ class VetoReason(StrEnum):
     CORRELATED_RISK_LIMIT = "CORRELATED_RISK_LIMIT"
     SIZE_BELOW_LOT = "SIZE_BELOW_LOT"
     INVALID_LEVELS = "INVALID_LEVELS"
+
+
+class Bias(StrEnum):
+    BULLISH = "BULLISH"
+    BEARISH = "BEARISH"
+    NEUTRAL = "NEUTRAL"
+
+
+class Playbook(StrEnum):
+    MEAN_REVERSION = "MEAN_REVERSION"
+    TREND_FOLLOWING = "TREND_FOLLOWING"
+    NO_TRADE = "NO_TRADE"
+
+
+class AuditDecision(StrEnum):
+    APPROVE = "APPROVE"
+    VETO = "VETO"
+
+
+class AnalysisStep(StrEnum):
+    STRUCTURE = "STRUCTURE"
+    QUANT = "QUANT"
+    PROPOSAL = "PROPOSAL"
+    GUARDS = "GUARDS"
+    RISK_AUDIT = "RISK_AUDIT"
+
+
+class AnalysisOutcome(StrEnum):
+    SIGNAL_APPROVED = "SIGNAL_APPROVED"
+    SIGNAL_REJECTED = "SIGNAL_REJECTED"
+    NO_TRADE = "NO_TRADE"

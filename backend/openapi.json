@@ -1,6 +1,326 @@
 {
   "components": {
     "schemas": {
+      "AgentReportSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "guards": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GuardDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AnalysisOutcome"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposedSignal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantAlphaReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "risk_verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskVerdict"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TradeSignalSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "structure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketStructureReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/StepUsage"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "symbol",
+          "timeframe",
+          "outcome",
+          "usage"
+        ],
+        "title": "AgentReportSchema",
+        "type": "object"
+      },
+      "AnalysisCompleted": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "event": {
+            "const": "analysis_completed",
+            "default": "analysis_completed",
+            "title": "Event",
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/components/schemas/AgentReportSchema"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "report"
+        ],
+        "title": "AnalysisCompleted",
+        "type": "object"
+      },
+      "AnalysisEventEnvelope": {
+        "description": "Envoltorio nombrado de la unión discriminada, solo para publicar el tipo en OpenAPI (D108).\n\nEl protocolo SSE no cambia: cada ``data:`` sigue siendo el JSON de UN evento (no del\nenvoltorio); ``RootModel`` serializa exactamente como la unión.",
+        "discriminator": {
+          "mapping": {
+            "analysis_completed": "#/components/schemas/AnalysisCompleted",
+            "analysis_failed": "#/components/schemas/AnalysisFailed",
+            "analysis_started": "#/components/schemas/AnalysisStarted",
+            "step_completed": "#/components/schemas/StepCompleted",
+            "step_failed": "#/components/schemas/StepFailed",
+            "step_started": "#/components/schemas/StepStarted"
+          },
+          "propertyName": "event"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AnalysisStarted"
+          },
+          {
+            "$ref": "#/components/schemas/StepStarted"
+          },
+          {
+            "$ref": "#/components/schemas/StepCompleted"
+          },
+          {
+            "$ref": "#/components/schemas/StepFailed"
+          },
+          {
+            "$ref": "#/components/schemas/AnalysisCompleted"
+          },
+          {
+            "$ref": "#/components/schemas/AnalysisFailed"
+          }
+        ],
+        "title": "AnalysisEventEnvelope"
+      },
+      "AnalysisFailed": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "event": {
+            "const": "analysis_failed",
+            "default": "analysis_failed",
+            "title": "Event",
+            "type": "string"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisStep"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "error"
+        ],
+        "title": "AnalysisFailed",
+        "type": "object"
+      },
+      "AnalysisOutcome": {
+        "enum": [
+          "SIGNAL_APPROVED",
+          "SIGNAL_REJECTED",
+          "NO_TRADE"
+        ],
+        "title": "AnalysisOutcome",
+        "type": "string"
+      },
+      "AnalysisStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "event": {
+            "const": "analysis_started",
+            "default": "analysis_started",
+            "title": "Event",
+            "type": "string"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "timeframes": {
+            "items": {
+              "$ref": "#/components/schemas/Timeframe"
+            },
+            "title": "Timeframes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "symbol",
+          "timeframe",
+          "timeframes",
+          "started_at"
+        ],
+        "title": "AnalysisStarted",
+        "type": "object"
+      },
+      "AnalysisStep": {
+        "enum": [
+          "STRUCTURE",
+          "QUANT",
+          "PROPOSAL",
+          "GUARDS",
+          "RISK_AUDIT"
+        ],
+        "title": "AnalysisStep",
+        "type": "string"
+      },
+      "AnalyzeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe",
+            "default": "1h"
+          },
+          "timeframes": {
+            "items": {
+              "$ref": "#/components/schemas/Timeframe"
+            },
+            "title": "Timeframes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "AnalyzeRequest",
+        "type": "object"
+      },
+      "AssetClass": {
+        "enum": [
+          "CRYPTO",
+          "FX",
+          "METAL",
+          "INDEX"
+        ],
+        "title": "AssetClass",
+        "type": "string"
+      },
+      "AuditDecision": {
+        "enum": [
+          "APPROVE",
+          "VETO"
+        ],
+        "title": "AuditDecision",
+        "type": "string"
+      },
       "BacktestConfig-Input": {
         "properties": {
           "allow_short": {
@@ -218,6 +538,15 @@
         "title": "BacktestMetricsSchema",
         "type": "object"
       },
+      "Bias": {
+        "enum": [
+          "BULLISH",
+          "BEARISH",
+          "NEUTRAL"
+        ],
+        "title": "Bias",
+        "type": "string"
+      },
       "CandleSchema": {
         "properties": {
           "close": {
@@ -266,6 +595,14 @@
         "title": "CandleSchema",
         "type": "object"
       },
+      "Direction": {
+        "enum": [
+          "LONG",
+          "SHORT"
+        ],
+        "title": "Direction",
+        "type": "string"
+      },
       "EquityPoint": {
         "properties": {
           "equity": {
@@ -283,6 +620,56 @@
           "equity"
         ],
         "title": "EquityPoint",
+        "type": "object"
+      },
+      "GuardDecision": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "messages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/VetoReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "rr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rr"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionSizeResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "approved",
+          "reasons",
+          "messages"
+        ],
+        "title": "GuardDecision",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -345,6 +732,484 @@
         "title": "HealthSchema",
         "type": "object"
       },
+      "JsonValue": {},
+      "KellyResult": {
+        "properties": {
+          "capped": {
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "fraction": {
+            "title": "Fraction",
+            "type": "number"
+          },
+          "full_kelly": {
+            "title": "Full Kelly",
+            "type": "number"
+          }
+        },
+        "required": [
+          "full_kelly",
+          "fraction",
+          "capped"
+        ],
+        "title": "KellyResult",
+        "type": "object"
+      },
+      "MarketStructureReport": {
+        "additionalProperties": false,
+        "description": "Lectura multi-timeframe: exige al menos 2 marcos distintos entre sí.",
+        "properties": {
+          "entry_timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "htf_alignment": {
+            "$ref": "#/components/schemas/Bias"
+          },
+          "invalidation_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invalidation Level"
+          },
+          "reasoning": {
+            "maxLength": 1500,
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframes": {
+            "items": {
+              "$ref": "#/components/schemas/TimeframeStructure"
+            },
+            "minItems": 2,
+            "title": "Timeframes",
+            "type": "array"
+          },
+          "zone_ts": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Ts"
+          }
+        },
+        "required": [
+          "symbol",
+          "entry_timeframe",
+          "timeframes",
+          "htf_alignment",
+          "reasoning"
+        ],
+        "title": "MarketStructureReport",
+        "type": "object"
+      },
+      "Playbook": {
+        "enum": [
+          "MEAN_REVERSION",
+          "TREND_FOLLOWING",
+          "NO_TRADE"
+        ],
+        "title": "Playbook",
+        "type": "string"
+      },
+      "PositionSizeResult": {
+        "properties": {
+          "notional": {
+            "title": "Notional",
+            "type": "string"
+          },
+          "risk_amount": {
+            "title": "Risk Amount",
+            "type": "string"
+          },
+          "risk_pct": {
+            "title": "Risk Pct",
+            "type": "string"
+          },
+          "stop_distance": {
+            "title": "Stop Distance",
+            "type": "string"
+          },
+          "units": {
+            "title": "Units",
+            "type": "string"
+          }
+        },
+        "required": [
+          "units",
+          "risk_amount",
+          "risk_pct",
+          "stop_distance",
+          "notional"
+        ],
+        "title": "PositionSizeResult",
+        "type": "object"
+      },
+      "ProposedSignal": {
+        "additionalProperties": false,
+        "description": "Propuesta determinista (sin tamaño ni estado). Niveles coherentes con la dirección.",
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "rr": {
+            "title": "Rr",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "stop_loss": {
+            "title": "Stop Loss",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "take_profit": {
+            "title": "Take Profit",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          }
+        },
+        "required": [
+          "symbol",
+          "timeframe",
+          "direction",
+          "entry",
+          "stop_loss",
+          "take_profit",
+          "rr",
+          "source"
+        ],
+        "title": "ProposedSignal",
+        "type": "object"
+      },
+      "QuantAlphaReport": {
+        "additionalProperties": false,
+        "properties": {
+          "kelly": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KellyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "playbook": {
+            "$ref": "#/components/schemas/Playbook"
+          },
+          "reasoning": {
+            "maxLength": 1500,
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "regime": {
+            "$ref": "#/components/schemas/RegimeLabel"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/RegimeStats"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          }
+        },
+        "required": [
+          "symbol",
+          "timeframe",
+          "regime",
+          "stats",
+          "playbook",
+          "reasoning"
+        ],
+        "title": "QuantAlphaReport",
+        "type": "object"
+      },
+      "RegimeLabel": {
+        "enum": [
+          "MEAN_REVERTING",
+          "TRENDING",
+          "HIGH_VOLATILITY_NOISE"
+        ],
+        "title": "RegimeLabel",
+        "type": "string"
+      },
+      "RegimeStats": {
+        "properties": {
+          "adf_pvalue": {
+            "title": "Adf Pvalue",
+            "type": "number"
+          },
+          "hurst": {
+            "title": "Hurst",
+            "type": "number"
+          },
+          "n_obs": {
+            "title": "N Obs",
+            "type": "integer"
+          },
+          "volatility_ratio": {
+            "title": "Volatility Ratio",
+            "type": "number"
+          },
+          "zscore": {
+            "title": "Zscore",
+            "type": "number"
+          }
+        },
+        "required": [
+          "hurst",
+          "adf_pvalue",
+          "zscore",
+          "volatility_ratio",
+          "n_obs"
+        ],
+        "title": "RegimeStats",
+        "type": "object"
+      },
+      "RiskVerdict": {
+        "additionalProperties": false,
+        "properties": {
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concerns",
+            "type": "array"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/AuditDecision"
+          },
+          "deterministic": {
+            "$ref": "#/components/schemas/GuardDecision"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "deterministic",
+          "concerns",
+          "rationale"
+        ],
+        "title": "RiskVerdict",
+        "type": "object"
+      },
+      "SignalStatus": {
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "EXECUTED"
+        ],
+        "title": "SignalStatus",
+        "type": "string"
+      },
+      "StepCompleted": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "event": {
+            "const": "step_completed",
+            "default": "step_completed",
+            "title": "Event",
+            "type": "string"
+          },
+          "output": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Output",
+            "type": "object"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "step": {
+            "$ref": "#/components/schemas/AnalysisStep"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/StepUsage"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "step",
+          "output",
+          "usage"
+        ],
+        "title": "StepCompleted",
+        "type": "object"
+      },
+      "StepFailed": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "event": {
+            "const": "step_failed",
+            "default": "step_failed",
+            "title": "Event",
+            "type": "string"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "step": {
+            "$ref": "#/components/schemas/AnalysisStep"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StepUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "step",
+          "error"
+        ],
+        "title": "StepFailed",
+        "type": "object"
+      },
+      "StepStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "event": {
+            "const": "step_started",
+            "default": "step_started",
+            "title": "Event",
+            "type": "string"
+          },
+          "seq": {
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "step": {
+            "$ref": "#/components/schemas/AnalysisStep"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "seq",
+          "step"
+        ],
+        "title": "StepStarted",
+        "type": "object"
+      },
+      "StepUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "input_tokens": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Latency Ms",
+            "type": "integer"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "output_tokens": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "title": "StepUsage",
+        "type": "object"
+      },
+      "StructureEventType": {
+        "enum": [
+          "BOS",
+          "CHOCH"
+        ],
+        "title": "StructureEventType",
+        "type": "string"
+      },
       "Timeframe": {
         "enum": [
           "5m",
@@ -355,6 +1220,152 @@
         ],
         "title": "Timeframe",
         "type": "string"
+      },
+      "TimeframeStructure": {
+        "additionalProperties": false,
+        "properties": {
+          "bias": {
+            "$ref": "#/components/schemas/Bias"
+          },
+          "comment": {
+            "maxLength": 1500,
+            "title": "Comment",
+            "type": "string"
+          },
+          "key_levels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Levels",
+            "type": "array"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StructureEventType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_fvg_ts": {
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Open Fvg Ts",
+            "type": "array"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          }
+        },
+        "required": [
+          "timeframe",
+          "bias",
+          "key_levels",
+          "open_fvg_ts",
+          "comment"
+        ],
+        "title": "TimeframeStructure",
+        "type": "object"
+      },
+      "TradeSignalSchema": {
+        "additionalProperties": false,
+        "description": "Señal canónica persistida.\n\nInvariantes:\n- LONG: stop_loss < entry < take_profit; SHORT: take_profit < entry < stop_loss.\n- APPROVED: `size` presente y `veto_reasons` vacío.\n- REJECTED: `veto_reasons` no vacío (veto determinista) O, si está vacío, `rationale`\n  debe contener `AUDITOR_REJECTION_MARKER` (rechazo del auditor, que no genera\n  motivos `VetoReason`).\n- PENDING y EXECUTED no imponen reglas adicionales.",
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "asset_class": {
+            "$ref": "#/components/schemas/AssetClass"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "regime": {
+            "$ref": "#/components/schemas/RegimeLabel"
+          },
+          "rr": {
+            "title": "Rr",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionSizeResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SignalStatus"
+          },
+          "stop_loss": {
+            "title": "Stop Loss",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "take_profit": {
+            "title": "Take Profit",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "veto_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/VetoReason"
+            },
+            "title": "Veto Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "analysis_id",
+          "symbol",
+          "asset_class",
+          "timeframe",
+          "direction",
+          "entry",
+          "stop_loss",
+          "take_profit",
+          "rr",
+          "status",
+          "regime",
+          "rationale",
+          "veto_reasons",
+          "created_at"
+        ],
+        "title": "TradeSignalSchema",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -395,6 +1406,19 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VetoReason": {
+        "enum": [
+          "RR_BELOW_MIN",
+          "RISK_PER_TRADE_EXCEEDED",
+          "DAILY_LOSS_LIMIT",
+          "OPEN_RISK_LIMIT",
+          "CORRELATED_RISK_LIMIT",
+          "SIZE_BELOW_LOT",
+          "INVALID_LEVELS"
+        ],
+        "title": "VetoReason",
+        "type": "string"
       }
     }
   },
@@ -404,6 +1428,47 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/agents/analyze": {
+      "post": {
+        "operationId": "post_analyze_api_v1_agents_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisEventEnvelope",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Flujo `text/event-stream`: un evento `data: <json>` por `AnalysisEvent`. Los fallos durante el análisis llegan como `analysis_failed` (HTTP 200)."
+          },
+          "404": {
+            "description": "Instrumento desconocido"
+          },
+          "422": {
+            "description": "Cuerpo inválido o datos insuficientes"
+          },
+          "503": {
+            "description": "Agentes no configurados (falta la clave del proveedor activo o AGENT_MODEL)"
+          }
+        },
+        "summary": "Post Analyze",
+        "tags": [
+          "agents"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "health_api_v1_health_get",
@@ -545,6 +1610,76 @@
         "summary": "Post Backtest",
         "tags": [
           "quant"
+        ]
+      }
+    },
+    "/api/v1/signals/active": {
+      "get": {
+        "description": "Señales `APPROVED`, de la más reciente a la más antigua.",
+        "operationId": "get_active_signals_api_v1_signals_active_get",
+        "parameters": [
+          {
+            "description": "Filtra por clase de activo",
+            "in": "query",
+            "name": "asset_class",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AssetClass"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por clase de activo",
+              "title": "Asset Class"
+            }
+          },
+          {
+            "description": "Máximo de señales",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Máximo de señales",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TradeSignalSchema"
+                  },
+                  "title": "Response Get Active Signals Api V1 Signals Active Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Active Signals",
+        "tags": [
+          "signals"
         ]
       }
     }

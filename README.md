@@ -312,6 +312,52 @@ uv run python scripts/make_golden.py --update      # regenerar: solo con revisi�
 
 Si un golden falla, no lo regeneres sin entender por qué cambió el número: es la alarma de que el determinismo se rompió.
 
+### Agentes (Fase 3)
+
+> **Avisos.** (1) Las señales **no caducan**: `GET /signals/active` devuelve toda señal `APPROVED`, por antigua que sea; usa `created_at` para filtrar. (2) La propuesta (entrada, SL, TP) es **determinista y está sin calibrar** (`PROPOSAL_TARGET_RR`, `PROPOSAL_SL_ATR_BUFFER`); el LLM no escribe precios. (3) **Sin la clave del proveedor activo (`ANTHROPIC_API_KEY` o `GEMINI_API_KEY`) el endpoint responde `503`**; el resto del sistema no depende de la clave. (4) El **estado de cartera es simulado** (`equity = ACCOUNT_EQUITY_USD`, PnL del día 0, sin posiciones abiertas) hasta el paper trading: las guardas de pérdida diaria y exposición no se ejercen con datos reales. (5) **Kelly es informativo**: sus entradas `p`/`b` son una hipótesis del agente sin calibrar y nunca fijan el tamaño, que sale solo de `position_size`. (6) Los prompts aún no se han validado con el modelo real (los tests usan `TestModel`/`FunctionModel`; la CI nunca llama a la API). Nada de esto es una recomendación de inversión.
+
+Flujo (secuencial, `backend/app/services/analysis.py`): **Structure → Quant → propuesta (código) → veto determinista (código) → Auditor**.
+
+1. `MarketStructureAgent` y `QuantAlphaAgent` usan las herramientas deterministas de `app/quant/` y `app/risk/`; un validador de salida rechaza cifras que no coincidan con las de las herramientas.
+2. `app/quant/proposal.py` construye entrada, SL y TP; si no hay propuesta coherente, el resultado es `NO_TRADE` (sin señal).
+3. `evaluate_trade` (2.7) vetea por código. Con veto, **no se llama al auditor**.
+4. Si las guardas aprueban, el `RiskAuditorAgent` solo puede mantener (`APPROVE`) o endurecer (`VETO`). Cada paso se guarda en `agent_analyses` (solo inserción) y la señal, aprobada o rechazada, en `trade_signals`.
+
+Lanzar un análisis (requiere velas ingeridas y la clave del proveedor elegido en `backend/.env`: `ANTHROPIC_API_KEY`, o `GEMINI_API_KEY` con `AGENT_PROVIDER=google`). `-N` desactiva el *buffering* de `curl` para ver los eventos SSE según llegan:
+
+```bash
+curl -N -X POST http://localhost:8000/api/v1/agents/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "EUR/USD", "timeframe": "1h", "timeframes": ["15m", "1h", "4h", "1d"]}'
+```
+
+La respuesta es `text/event-stream`: un `data: <json>` por evento (`analysis_started`, `step_started`, `step_completed`, `step_failed`, `analysis_completed` con el informe final, `analysis_failed`). Errores antes de abrir el *stream*: `404` instrumento desconocido, `422` datos insuficientes (mínimo 100 velas por marco y al menos 2 marcos, incluido el de entrada) o cuerpo inválido, `503` agentes no configurados (`El análisis con agentes no está configurado: falta <VARIABLE>.`, con la variable del proveedor activo o `AGENT_MODEL`). Los fallos durante el análisis (incluido exceder un tope de tokens o coste) llegan como evento `analysis_failed` con HTTP 200.
+
+Señales aprobadas (más recientes primero; `asset_class` y `limit` 1–200, por defecto 50, opcionales):
+
+```bash
+curl "http://localhost:8000/api/v1/signals/active?asset_class=FX&limit=20"
+```
+
+Variables de entorno (todas opcionales; también en `backend/.env.example`):
+
+| Variable | Defecto | Significado |
+| :--- | :--- | :--- |
+| `AGENT_PROVIDER` | `anthropic` | Proveedor LLM: `anthropic` o `google` (Gemini) |
+| `ANTHROPIC_API_KEY` | vacía | Clave de Anthropic (secreto). Vacía con `AGENT_PROVIDER=anthropic` = agentes deshabilitados (`503`) |
+| `GEMINI_API_KEY` | vacía | Clave de Gemini (secreto). Vacía con `AGENT_PROVIDER=google` = agentes deshabilitados (`503`) |
+| `AGENT_MODEL` | `claude-sonnet-5-5` | Modelo de los agentes. Con `google` es **obligatorio** definirlo con un modelo Gemini (si no, `503` «falta AGENT_MODEL») |
+| `AGENT_AUDITOR_MODEL` | vacía | Modelo del auditor; vacía = el mismo que `AGENT_MODEL` |
+| `AGENT_TIMEOUT_S` | `120` | Tiempo máximo por ejecución de agente: limita la ejecución COMPLETA (`agent.run(timeout=...)`: todas las llamadas al modelo y a herramientas de ese agente), no cada llamada |
+| `AGENT_MAX_TOKENS_PER_ANALYSIS` | `60000` | Tope de tokens (entrada + salida) por análisis, repartido entre los agentes |
+| `AGENT_MAX_COST_USD_PER_ANALYSIS` | sin definir | Tope de coste por análisis; exige los dos precios siguientes |
+| `AGENT_PRICE_INPUT_USD_PER_MTOK` | sin definir | USD por millón de tokens de entrada; sin precios, `cost_usd = null` |
+| `AGENT_PRICE_OUTPUT_USD_PER_MTOK` | sin definir | USD por millón de tokens de salida |
+| `ACCOUNT_EQUITY_USD` | `10000` | Capital simulado para tamaños y guardas |
+| `ANALYSIS_LOOKBACK_BARS` | `500` | Velas por marco temporal (100–5000) |
+| `PROPOSAL_TARGET_RR` | `2.0` | R:R objetivo de la propuesta (debe ser ≥ `MIN_RR`) |
+| `PROPOSAL_SL_ATR_BUFFER` | `0.5` | Colchón del SL en múltiplos de ATR |
+
 ### 4. Frontend (Next.js)
 
 ```bash

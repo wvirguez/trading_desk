@@ -112,7 +112,7 @@ async def test_check_rechaza_timeframe_invalido(db_session: AsyncSession) -> Non
 async def test_downgrade_y_upgrade_de_0006(db_session: AsyncSession) -> None:
     await db_session.commit()
     try:
-        _alembic("downgrade", "-1")
+        _alembic("downgrade", "0005_yahoo_5m")
         await db_session.rollback()
         exists = (
             await db_session.execute(text("SELECT to_regclass('public.strategies')"))

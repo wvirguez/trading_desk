@@ -2,9 +2,9 @@
 
 from decimal import Decimal
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal, Self
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEV_DB = "postgresql+asyncpg://quant_admin:quant_secret_dev@localhost:5432"
@@ -46,6 +46,71 @@ class Settings(BaseSettings):
     correlation_window: int = Field(default=100, ge=20, le=5000)
     correlation_threshold: Decimal = Field(default=Decimal("0.7"), gt=0, le=1)
     backtest_max_bars: int = Field(default=50000, ge=100, le=1_000_000)
+
+    # Agentes (Fase 3, D81-D97). La clave nunca se muestra en repr/logs; vacía = agentes
+    # deshabilitados.
+    agent_provider: Literal["anthropic", "google"] = "anthropic"
+    anthropic_api_key: SecretStr | None = None
+    gemini_api_key: SecretStr | None = None
+    agent_model: str = Field(default="claude-sonnet-5-5", min_length=1)
+    agent_auditor_model: str | None = None
+    # Tope de la ejecución COMPLETA de un agente (`agent.run(timeout=...)`), no de cada llamada.
+    agent_timeout_s: float = Field(default=120, gt=0, le=3600)
+    agent_max_tokens_per_analysis: int = Field(default=60000, ge=1000, le=10_000_000)
+    agent_max_cost_usd_per_analysis: Decimal | None = Field(default=None, gt=0)
+    agent_price_input_usd_per_mtok: Decimal | None = Field(default=None, ge=0)
+    agent_price_output_usd_per_mtok: Decimal | None = Field(default=None, ge=0)
+    account_equity_usd: Decimal = Field(default=Decimal("10000"), gt=0)
+    analysis_lookback_bars: int = Field(default=500, ge=100, le=5000)
+    proposal_target_rr: Decimal = Field(default=Decimal("2.0"), ge=1, le=20)
+    proposal_sl_atr_buffer: Decimal = Field(default=Decimal("0.5"), ge=0, le=10)
+
+    @field_validator(
+        "anthropic_api_key",
+        "gemini_api_key",
+        "agent_auditor_model",
+        "agent_max_cost_usd_per_analysis",
+        "agent_price_input_usd_per_mtok",
+        "agent_price_output_usd_per_mtok",
+        mode="before",
+    )
+    @classmethod
+    def _empty_string_is_none(cls, value: Any) -> Any:
+        """Una variable de entorno vacía (`VAR=`) equivale a «no definida»."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @model_validator(mode="after")
+    def _check_agent_coherence(self) -> Self:
+        if self.proposal_target_rr < self.min_rr:
+            raise ValueError(
+                f"PROPOSAL_TARGET_RR ({self.proposal_target_rr}) debe ser mayor o igual "
+                f"que MIN_RR ({self.min_rr})"
+            )
+        if self.agent_max_cost_usd_per_analysis is not None and (
+            self.agent_price_input_usd_per_mtok is None
+            or self.agent_price_output_usd_per_mtok is None
+        ):
+            raise ValueError(
+                "AGENT_MAX_COST_USD_PER_ANALYSIS exige definir AGENT_PRICE_INPUT_USD_PER_MTOK "
+                "y AGENT_PRICE_OUTPUT_USD_PER_MTOK"
+            )
+        self._check_model_matches_provider()
+        return self
+
+    def _check_model_matches_provider(self) -> None:
+        """Un modelo definido explícitamente no puede ser de la familia del otro proveedor."""
+        other = {"anthropic": "gemini", "google": "claude"}[self.agent_provider]
+        candidates = {
+            "AGENT_MODEL": self.agent_model if "agent_model" in self.model_fields_set else None,
+            "AGENT_AUDITOR_MODEL": self.agent_auditor_model,
+        }
+        for var, name in candidates.items():
+            if name is not None and name.strip().lower().startswith(other):
+                raise ValueError(
+                    f"{var}={name!r} no corresponde a AGENT_PROVIDER={self.agent_provider!r}"
+                )
 
 
 @lru_cache

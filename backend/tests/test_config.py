@@ -135,3 +135,184 @@ def test_risk_vars_reject_out_of_range(
 
     with pytest.raises(ValidationError):
         Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+_AGENT_VARS = (
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "AGENT_PROVIDER",
+    "AGENT_MODEL",
+    "AGENT_AUDITOR_MODEL",
+    "AGENT_TIMEOUT_S",
+    "AGENT_MAX_TOKENS_PER_ANALYSIS",
+    "AGENT_MAX_COST_USD_PER_ANALYSIS",
+    "AGENT_PRICE_INPUT_USD_PER_MTOK",
+    "AGENT_PRICE_OUTPUT_USD_PER_MTOK",
+    "ACCOUNT_EQUITY_USD",
+    "ANALYSIS_LOOKBACK_BARS",
+    "PROPOSAL_TARGET_RR",
+    "PROPOSAL_SL_ATR_BUFFER",
+    "MIN_RR",
+)
+
+
+def _clean_agent_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _AGENT_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_agent_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.agent_provider == "anthropic"
+    assert settings.anthropic_api_key is None
+    assert settings.gemini_api_key is None
+    assert settings.agent_model == "claude-sonnet-5-5"
+    assert settings.agent_auditor_model is None
+    assert settings.agent_timeout_s == 120
+    assert settings.agent_max_tokens_per_analysis == 60000
+    assert settings.agent_max_cost_usd_per_analysis is None
+    assert settings.agent_price_input_usd_per_mtok is None
+    assert settings.agent_price_output_usd_per_mtok is None
+    assert settings.account_equity_usd == Decimal("10000")
+    assert settings.analysis_lookback_bars == 500
+    assert settings.proposal_target_rr == Decimal("2.0")
+    assert settings.proposal_sl_atr_buffer == Decimal("0.5")
+
+
+def test_anthropic_key_is_not_exposed_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-super-secreta")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.anthropic_api_key is not None
+    assert settings.anthropic_api_key.get_secret_value() == "sk-ant-super-secreta"
+    assert "sk-ant-super-secreta" not in repr(settings)
+    assert "sk-ant-super-secreta" not in str(settings)
+
+
+def test_empty_optional_agent_vars_are_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+    monkeypatch.setenv("AGENT_AUDITOR_MODEL", "")
+    monkeypatch.setenv("AGENT_MAX_COST_USD_PER_ANALYSIS", "")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.anthropic_api_key is None
+    assert settings.agent_auditor_model is None
+    assert settings.agent_max_cost_usd_per_analysis is None
+
+
+def test_proposal_target_rr_below_min_rr_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("MIN_RR", "1.8")
+    monkeypatch.setenv("PROPOSAL_TARGET_RR", "1.0")
+
+    with pytest.raises(ValidationError, match="PROPOSAL_TARGET_RR"):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+def test_cost_cap_requires_both_prices(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("AGENT_MAX_COST_USD_PER_ANALYSIS", "0.5")
+
+    with pytest.raises(ValidationError, match="AGENT_MAX_COST_USD_PER_ANALYSIS"):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+    monkeypatch.setenv("AGENT_PRICE_INPUT_USD_PER_MTOK", "3")
+    with pytest.raises(ValidationError, match="AGENT_MAX_COST_USD_PER_ANALYSIS"):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+def test_cost_cap_with_both_prices_is_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("AGENT_MAX_COST_USD_PER_ANALYSIS", "0.5")
+    monkeypatch.setenv("AGENT_PRICE_INPUT_USD_PER_MTOK", "3")
+    monkeypatch.setenv("AGENT_PRICE_OUTPUT_USD_PER_MTOK", "15")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.agent_max_cost_usd_per_analysis == Decimal("0.5")
+
+
+@pytest.mark.parametrize(
+    ("var", "value"),
+    [
+        ("ANALYSIS_LOOKBACK_BARS", "10"),
+        ("ANALYSIS_LOOKBACK_BARS", "5001"),
+        ("AGENT_TIMEOUT_S", "0"),
+        ("AGENT_MAX_TOKENS_PER_ANALYSIS", "0"),
+        ("ACCOUNT_EQUITY_USD", "0"),
+        ("PROPOSAL_SL_ATR_BUFFER", "-1"),
+        ("AGENT_PRICE_INPUT_USD_PER_MTOK", "-1"),
+        ("AGENT_MAX_COST_USD_PER_ANALYSIS", "0"),
+    ],
+)
+def test_agent_vars_reject_out_of_range(
+    monkeypatch: pytest.MonkeyPatch, var: str, value: str
+) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv(var, value)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+def test_gemini_key_is_not_exposed_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("GEMINI_API_KEY", "AIza-super-secreta")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.gemini_api_key is not None
+    assert settings.gemini_api_key.get_secret_value() == "AIza-super-secreta"
+    assert "AIza-super-secreta" not in repr(settings)
+    assert "AIza-super-secreta" not in str(settings)
+
+
+def test_empty_gemini_key_is_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("GEMINI_API_KEY", "  ")
+
+    assert Settings(_env_file=None).gemini_api_key is None  # type: ignore[call-arg]
+
+
+def test_agent_provider_from_env_and_invalid_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_agent_env(monkeypatch)
+    monkeypatch.setenv("AGENT_PROVIDER", "google")
+    assert Settings(_env_file=None).agent_provider == "google"  # type: ignore[call-arg]
+
+    monkeypatch.setenv("AGENT_PROVIDER", "openai")
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
+    ("provider", "model", "auditor"),
+    [
+        ("google", "claude-sonnet-5-5", None),
+        ("google", "gemini-3.8-flash", "claude-x"),
+        ("anthropic", "gemini-3.8-flash", None),
+        ("anthropic", "claude-sonnet-5-5", "gemini-3.8-flash"),
+    ],
+)
+def test_model_of_the_other_provider_is_rejected(
+    monkeypatch: pytest.MonkeyPatch, provider: str, model: str, auditor: str | None
+) -> None:
+    _clean_agent_env(monkeypatch)
+    with pytest.raises(ValidationError, match="no corresponde a AGENT_PROVIDER"):
+        Settings(  # type: ignore[call-arg]
+            _env_file=None, agent_provider=provider, agent_model=model, agent_auditor_model=auditor
+        )
+
+
+def test_google_with_default_model_is_valid_at_settings_level(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """El modelo por defecto no se valida en Settings; `build_model` exige AGENT_MODEL."""
+    _clean_agent_env(monkeypatch)
+    settings = Settings(_env_file=None, agent_provider="google")  # type: ignore[call-arg]
+    assert "agent_model" not in settings.model_fields_set

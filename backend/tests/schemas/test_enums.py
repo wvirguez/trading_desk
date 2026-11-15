@@ -3,8 +3,13 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 
 from app.schemas.enums import (
+    AnalysisOutcome,
+    AnalysisStep,
     AssetClass,
+    AuditDecision,
+    Bias,
     Direction,
+    Playbook,
     Provider,
     RegimeLabel,
     SessionType,
@@ -82,4 +87,22 @@ def test_valores_de_enums_de_fase_2() -> None:
         "CORRELATED_RISK_LIMIT",
         "SIZE_BELOW_LOT",
         "INVALID_LEVELS",
+    ]
+
+
+def test_valores_de_enums_de_fase_3() -> None:
+    assert [m.value for m in Bias] == ["BULLISH", "BEARISH", "NEUTRAL"]
+    assert [m.value for m in Playbook] == ["MEAN_REVERSION", "TREND_FOLLOWING", "NO_TRADE"]
+    assert [m.value for m in AuditDecision] == ["APPROVE", "VETO"]
+    assert [m.value for m in AnalysisStep] == [
+        "STRUCTURE",
+        "QUANT",
+        "PROPOSAL",
+        "GUARDS",
+        "RISK_AUDIT",
+    ]
+    assert [m.value for m in AnalysisOutcome] == [
+        "SIGNAL_APPROVED",
+        "SIGNAL_REJECTED",
+        "NO_TRADE",
     ]
