@@ -120,11 +120,13 @@ Pipeline async secuencial: **Structure → Quant → veto determinista → RiskA
 | Método | Endpoint | Descripción | Solicitud → respuesta |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/market/ohlcv` | Velas históricas normalizadas | `symbol`, `tf`, `limit` → `List[CandleSchema]` |
+| `GET` | `/market/instruments` | Instrumentos registrados (4 del seed) | — → `List[InstrumentSchema]` |
+| `GET` | `/market/structure` | Estructura determinista: swings, BOS/CHoCH y FVG | `symbol`, `tf`, `limit`, `n` → `MarketStructureResult` |
 | `POST` | `/agents/analyze` | Análisis multiagente | `AnalyzeRequest` → stream SSE + `AgentReportSchema` |
 | `POST` | `/quant/backtest` | Simulación vectorizada de una estrategia | `BacktestConfig` → `BacktestMetricsSchema` |
 | `GET` | `/signals/active` | Señales aprobadas por el sistema de riesgo | `asset_class` → `List[TradeSignalSchema]` |
-| `POST` | `/signals/{id}/execute` | Ejecución **simulada** (paper trading) | `ExecutionConfirm` → `OrderReceiptSchema` |
-| `WS` | `/ws/stream/{symbol}` | Ticks y alertas en tiempo real | `TickUpdateEvent` \| `SignalAlertEvent` |
+| `POST` | `/signals/{id}/execute` | Ejecución **simulada** (paper trading; pendiente, 4.6/4.7) | `ExecutionConfirm` → `OrderReceiptSchema` |
+| `WS` | `/ws/stream/{symbol}` | Ticks (último cierre ingerido, provisional) y alertas de señal | `TickUpdateEvent` \| `SignalAlertEvent` |
 
 ### Esquema canónico `TradeSignalSchema`
 
@@ -191,14 +193,17 @@ trading_desk/
 │   └── uv.lock
 │
 ├── frontend/                       # Next.js 16 (App Router, Node 22+)
-│   ├── app/                        # Rutas (fase 4: /desk, /backtest, /agents, /journal)
-│   ├── components/ hooks/ store/   # (fase 4)
+│   ├── app/                        # Rutas: /desk, /backtest, /agents, /journal
+│   ├── components/ hooks/ store/   # Shell, gráfico, overlays, señales y feed
+│   ├── lib/                        # api, env, format, chart-data, overlays, sse, ws
 │   ├── types/api.ts                # GENERADO con openapi-typescript (no editar; `npm run gen:api`)
+│   ├── e2e/                        # Playwright: specs, support y fixtures JSON
+│   ├── playwright.config.ts        # Chromium, puerto 3100 y red simulada
 │   ├── AGENTS.md                   # Avisos de Next 16 para agentes (gestionado por next dev)
 │   ├── vitest.config.mts
 │   └── package.json
 │
-├── .github/workflows/ci.yml        # CI: lint, typecheck, tests y build
+├── .github/workflows/ci.yml        # CI: backend, frontend y e2e
 └── README.md
 ```
 
@@ -358,7 +363,7 @@ Variables de entorno (todas opcionales; también en `backend/.env.example`):
 | `PROPOSAL_TARGET_RR` | `2.0` | R:R objetivo de la propuesta (debe ser ≥ `MIN_RR`) |
 | `PROPOSAL_SL_ATR_BUFFER` | `0.5` | Colchón del SL en múltiplos de ATR |
 
-### 4. Frontend (Next.js)
+### 4. Terminal (frontend, Next.js 16)
 
 ```bash
 cd frontend
@@ -366,6 +371,34 @@ npm install
 cp .env.local.example .env.local
 npm run dev                                      # http://localhost:3000
 ```
+
+Variables de entorno (se incrustan en el *build*; ninguna es secreta; también en `frontend/.env.example`):
+
+| Variable | Defecto | Significado |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Base del backend para REST y SSE |
+| `NEXT_PUBLIC_WS_URL` | `ws://localhost:8000/api/v1/ws` | Base del WebSocket |
+
+El navegador llama **directo** al backend, sin proxy de Next: define `CORS_ALLOW_ORIGINS` en `backend/.env` (por defecto `http://localhost:3000`) o el navegador bloqueará REST y SSE. No hay `rewrites`.
+
+Rutas y alcance:
+
+- `/` redirige a `/desk`.
+- `/desk`: gráfico de velas con selectores de símbolo y timeframe, overlays de la señal aprobada (entrada, SL, TP), cajas FVG y panel lateral de señales/análisis.
+- `/agents`: formulario y feed de razonamiento del análisis SSE, paso a paso.
+- `/backtest` y `/journal`: páginas marcadoras honestas («Pendiente: paso 4.8» / «4.9»); aún no hay blotter ni journal.
+
+**Qué es provisional:** los ticks del WebSocket son el **último cierre ingerido**, no un feed en tiempo real, y la UI lo rotula; `/backtest` y `/journal` no están implementadas (pasos 4.8/4.9); los datos de FX, metales e índices vienen de Yahoo y son provisionales (véase el aviso de ingesta).
+
+E2E con Playwright y red simulada (no requiere backend, base de datos ni claves de LLM):
+
+```bash
+cd frontend
+npx playwright install chromium
+npm run test:e2e
+```
+
+Playwright levanta `next build && next start` en el puerto 3100 y simula REST, SSE y WebSocket con `page.route` y `page.routeWebSocket` a partir de fixtures JSON en `e2e/fixtures/`.
 
 > ⚠️ Next.js 16 introduce cambios incompatibles con versiones anteriores. Antes de escribir código de frontend, consulta `frontend/node_modules/next/dist/docs/` (véase [`frontend/AGENTS.md`](frontend/AGENTS.md)).
 
@@ -383,9 +416,10 @@ uv run pytest -m "not db"                        # sin base de datos
 cd frontend
 npm run gen:api                                  # regenera types/api.ts desde backend/openapi.json
 npm run lint && npm run typecheck && npm test && npm run build
+npm run test:e2e                                 # Playwright con red simulada
 ```
 
-La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo anterior en cada PR contra un *service* `timescale/timescaledb:latest-pg16`. Además comprueba que `backend/openapi.json` y `frontend/types/api.ts` están regenerados (falla si `git diff` no está vacío). Playwright (E2E) llegará en la fase 4.
+La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo anterior en cada PR contra un *service* `timescale/timescaledb:latest-pg16`. Además comprueba que `backend/openapi.json` y `frontend/types/api.ts` están regenerados (falla si `git diff` no está vacío) y ejecuta un job `e2e` con Chromium y red simulada (caché de navegadores y sin claves de LLM).
 
 ---
 

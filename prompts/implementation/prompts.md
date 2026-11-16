@@ -50,7 +50,7 @@ Do not fix anything after the subagent. Perform a review and provide a list of c
 
 ### Prompt 7: 
 
-Ejecuta /spec-implementer solo para el grupo de tareas 7C de la spec de 2026-11-15-terminal-ui-lectura/plan.md. Al terminar, invoca inmediatamente /validar. Si la validación devuelve estado RECHAZADO, corrige los puntos indicados y vuelve a correr /validar hasta que sea APROBADO (máximo 2 reintentos).
+Ejecuta /spec-implementer solo para el grupo de tareas 8 de la spec de 2026-11-15-terminal-ui-lectura/plan.md. Al terminar, invoca inmediatamente /validar. Si la validación devuelve estado RECHAZADO, corrige los puntos indicados y vuelve a correr /validar hasta que sea APROBADO (máximo 2 reintentos).
 
 
 

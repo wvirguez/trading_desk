@@ -5,8 +5,8 @@
 
 # env files (solo se versionan las plantillas *.example)
 .env*
-!.env.example
-!.env.local.example
+.env.example
+.env.local.example
 
 # ---------- Frontend (Next.js) ----------
 node_modules/

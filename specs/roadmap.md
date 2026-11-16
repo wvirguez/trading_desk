@@ -55,11 +55,11 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 
 ## Fase 4 — Terminal UI en Next.js *(TODO: Week 4)*
 
-- [ ] **4.1 Layout del terminal.** Shell oscuro, navegación (`/desk`, `/backtest`, `/agents`, `/journal`), store Zustand (símbolo y timeframe activos) y providers de TanStack Query.
-- [ ] **4.2 Gráfico de velas.** Wrapper de `lightweight-charts` alimentado por `GET /market/ohlcv`, con selector de símbolo y timeframe.
-- [ ] **4.3 Overlays de señal.** Zona de entrada, SL, TP y cajas FVG dibujadas a partir de `TradeSignalSchema`.
-- [ ] **4.4 WebSocket `/ws/stream/{symbol}`.** Backend: `TickUpdateEvent` y `SignalAlertEvent`. Frontend: hook que actualiza la última vela.
-- [ ] **4.5 Feed de razonamiento de agentes.** Consume el SSE de `/agents/analyze` y muestra la traza paso a paso.
+- [x] **4.1 Layout del terminal.** Shell oscuro, navegación (`/desk`, `/backtest`, `/agents`, `/journal`), store Zustand (símbolo y timeframe activos) y providers de TanStack Query.
+- [x] **4.2 Gráfico de velas.** Wrapper de `lightweight-charts` alimentado por `GET /market/ohlcv`, con selector de símbolo y timeframe.
+- [x] **4.3 Overlays de señal.** Zona de entrada, SL, TP y cajas FVG dibujadas a partir de `TradeSignalSchema`.
+- [x] **4.4 WebSocket `/ws/stream/{symbol}`.** Backend: `TickUpdateEvent` y `SignalAlertEvent`. Frontend: hook que actualiza la última vela.
+- [x] **4.5 Feed de razonamiento de agentes.** Consume el SSE de `/agents/analyze` y muestra la traza paso a paso.
 - [ ] **4.6 Paper trading: backend.** `POST /signals/{id}/execute` (simulado), `OrderReceiptSchema` y simulador de fills contra OHLCV.
 - [ ] **4.7 Blotter de ejecución.** Tabla de órdenes y posiciones simuladas, con su PnL.
 - [ ] **4.8 Vista de backtest.** Formulario `BacktestConfig`, curva de capital y métricas.
