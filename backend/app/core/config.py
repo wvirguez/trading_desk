@@ -4,7 +4,7 @@ from decimal import Decimal
 from functools import lru_cache
 from typing import Any, Literal, Self
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEV_DB = "postgresql+asyncpg://quant_admin:quant_secret_dev@localhost:5432"
@@ -29,6 +29,35 @@ class Settings(BaseSettings):
     backfill_years_1h: int = 5
     backfill_years_4h: int = 5
     backfill_years_1d: int = 5
+
+    # Frontend / CORS / WebSocket (Fase 4)
+    cors_allow_origins_raw: str = Field(
+        default="http://localhost:3000",
+        validation_alias="CORS_ALLOW_ORIGINS",
+    )
+    ws_poll_interval_s: float = Field(
+        default=2.0,
+        ge=0.5,
+        le=60.0,
+        validation_alias="WS_POLL_INTERVAL_S",
+    )
+
+    @field_validator("cors_allow_origins_raw", mode="before")
+    @classmethod
+    def _validate_cors_origins_raw(cls, value: Any) -> Any:
+        """Valida CORS_ALLOW_ORIGINS antes de parsear."""
+        if isinstance(value, str):
+            if not value.strip():
+                raise ValueError("CORS_ALLOW_ORIGINS no puede ser una cadena vacía")
+            origins = [o.strip() for o in value.split(",") if o.strip()]
+            if "*" in origins:
+                raise ValueError("CORS_ALLOW_ORIGINS no puede contener '*' (comodín)")
+        return value
+
+    @computed_field
+    def cors_allow_origins(self) -> list[str]:
+        """Lista de orígenes CORS parseada desde CORS_ALLOW_ORIGINS."""
+        return [o.strip() for o in self.cors_allow_origins_raw.split(",") if o.strip()]
 
     # Horizontes de Yahoo (D30): límites del proveedor, verificados el 2026-11-13.
     backfill_days_5m_yahoo: int = 59

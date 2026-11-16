@@ -1,5 +1,6 @@
 """Acceso a `trade_signals` y conversión a `TradeSignalSchema` (D96)."""
 
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -135,3 +136,27 @@ async def list_executed(session: AsyncSession) -> list[OpenPosition]:
         )
         for signal, symbol in rows
     ]
+
+
+async def list_approved_since(
+    session: AsyncSession, symbol: str, since: datetime
+) -> list[TradeSignalSchema]:
+    """Señales `APPROVED` del símbolo creadas **después** de `since`, ascendente por `created_at`.
+
+    Excluye filas anteriores a la Fase 3 (sin `analysis_id`).
+    """
+    stmt = (
+        select(TradeSignal, Instrument)
+        .join(Instrument, Instrument.id == TradeSignal.instrument_id)
+        .where(
+            Instrument.symbol == symbol,
+            TradeSignal.status == SignalStatus.APPROVED.value,
+            TradeSignal.analysis_id.is_not(None),
+            TradeSignal.rr.is_not(None),
+            TradeSignal.regime.is_not(None),
+            TradeSignal.created_at > since,
+        )
+        .order_by(TradeSignal.created_at.asc(), TradeSignal.id)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [to_schema(signal, instrument) for signal, instrument in rows]

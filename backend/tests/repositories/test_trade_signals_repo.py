@@ -272,3 +272,61 @@ async def test_downgrade_y_upgrade_de_0008(db_session: AsyncSession) -> None:
         )
     }
     assert NEW_COLUMNS <= cols
+
+
+async def test_list_approved_since_filtra_estado_simbolo_fecha_y_fase3(
+    db_session: AsyncSession,
+) -> None:
+    btc = await _iid(db_session)
+    eur = await _iid(db_session, "EUR/USD")
+
+    older = _signal(created_at=T0)
+    middle = _signal(created_at=T0 + timedelta(hours=1))
+    newer = _signal(created_at=T0 + timedelta(hours=2))
+    rejected = _signal(
+        status=SignalStatus.REJECTED,
+        created_at=T0 + timedelta(hours=3),
+        veto=[VetoReason.RR_BELOW_MIN],
+    )
+    no_analysis = _signal(
+        created_at=T0 + timedelta(hours=4),
+    )
+    # Insertar fila sin analysis_id (fase 2) directamente en BD
+    await db_session.execute(
+        text(
+            "INSERT INTO trade_signals (id, instrument_id, timeframe, direction, entry, "
+            "stop_loss, take_profit, status, created_at, updated_at) "
+            "VALUES (:id, :i, '1h', 'LONG', 100, 95, 110, 'APPROVED', :ts, :ts)"
+        ),
+        {"id": no_analysis.id, "i": btc, "ts": no_analysis.created_at},
+    )
+
+    for s in (older, middle, newer, rejected):
+        await repo.insert_signal(db_session, s, btc)
+    fx = _signal(symbol="EUR/USD", created_at=T0 + timedelta(hours=5))
+    await repo.insert_signal(db_session, fx, eur)
+
+    since = T0 + timedelta(minutes=30)
+    result = await repo.list_approved_since(db_session, "BTC/USDT", since)
+
+    assert [s.id for s in result] == [middle.id, newer.id]
+    for s in result:
+        assert s.status is SignalStatus.APPROVED
+        assert s.analysis_id is not None
+        assert s.created_at > since
+
+
+async def test_list_approved_since_orden_ascendente_por_created_at(
+    db_session: AsyncSession,
+) -> None:
+    btc = await _iid(db_session)
+    signals = [
+        _signal(created_at=T0 + timedelta(hours=3)),
+        _signal(created_at=T0 + timedelta(hours=1)),
+        _signal(created_at=T0 + timedelta(hours=2)),
+    ]
+    for s in signals:
+        await repo.insert_signal(db_session, s, btc)
+
+    result = await repo.list_approved_since(db_session, "BTC/USDT", T0)
+    assert [s.created_at for s in result] == sorted([s.created_at for s in result])

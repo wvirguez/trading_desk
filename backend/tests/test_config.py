@@ -316,3 +316,64 @@ def test_google_with_default_model_is_valid_at_settings_level(
     _clean_agent_env(monkeypatch)
     settings = Settings(_env_file=None, agent_provider="google")  # type: ignore[call-arg]
     assert "agent_model" not in settings.model_fields_set
+
+
+def test_cors_and_ws_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in ("CORS_ALLOW_ORIGINS", "WS_POLL_INTERVAL_S"):
+        monkeypatch.delenv(var, raising=False)
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.cors_allow_origins == ["http://localhost:3000"]
+    assert settings.ws_poll_interval_s == 2.0
+
+
+def test_cors_allow_origins_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", "http://a,http://b")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.cors_allow_origins == ["http://a", "http://b"]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "*",
+        "http://a,*",
+        "*,http://b",
+        "",
+        "   ",
+    ],
+)
+def test_cors_allow_origins_rejects_invalid(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", value)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "0",
+        "0.4",
+        "60.1",
+        "100",
+    ],
+)
+def test_ws_poll_interval_s_rejects_out_of_range(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("WS_POLL_INTERVAL_S", value)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+def test_ws_poll_interval_s_accepts_valid(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WS_POLL_INTERVAL_S", "0.5")
+    assert Settings(_env_file=None).ws_poll_interval_s == 0.5  # type: ignore[call-arg]
+
+    monkeypatch.setenv("WS_POLL_INTERVAL_S", "60")
+    assert Settings(_env_file=None).ws_poll_interval_s == 60.0  # type: ignore[call-arg]

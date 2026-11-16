@@ -622,6 +622,46 @@
         "title": "EquityPoint",
         "type": "object"
       },
+      "FairValueGap": {
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "high": {
+            "title": "High",
+            "type": "string"
+          },
+          "low": {
+            "title": "Low",
+            "type": "string"
+          },
+          "mitigated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigated At"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ts",
+          "direction",
+          "low",
+          "high"
+        ],
+        "title": "FairValueGap",
+        "type": "object"
+      },
       "GuardDecision": {
         "properties": {
           "approved": {
@@ -732,6 +772,56 @@
         "title": "HealthSchema",
         "type": "object"
       },
+      "InstrumentSchema": {
+        "properties": {
+          "asset_class": {
+            "$ref": "#/components/schemas/AssetClass"
+          },
+          "base_currency": {
+            "title": "Base Currency",
+            "type": "string"
+          },
+          "lot_size": {
+            "title": "Lot Size",
+            "type": "string"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/Provider"
+          },
+          "provider_symbol": {
+            "title": "Provider Symbol",
+            "type": "string"
+          },
+          "quote_currency": {
+            "title": "Quote Currency",
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionType"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "tick_size": {
+            "title": "Tick Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol",
+          "asset_class",
+          "provider",
+          "provider_symbol",
+          "base_currency",
+          "quote_currency",
+          "tick_size",
+          "lot_size",
+          "session"
+        ],
+        "title": "InstrumentSchema",
+        "type": "object"
+      },
       "JsonValue": {},
       "KellyResult": {
         "properties": {
@@ -815,6 +905,38 @@
           "reasoning"
         ],
         "title": "MarketStructureReport",
+        "type": "object"
+      },
+      "MarketStructureResult": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/StructureEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "fvgs": {
+            "items": {
+              "$ref": "#/components/schemas/FairValueGap"
+            },
+            "title": "Fvgs",
+            "type": "array"
+          },
+          "swings": {
+            "items": {
+              "$ref": "#/components/schemas/SwingPoint"
+            },
+            "title": "Swings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "swings",
+          "events",
+          "fvgs"
+        ],
+        "title": "MarketStructureResult",
         "type": "object"
       },
       "Playbook": {
@@ -906,6 +1028,15 @@
         ],
         "title": "ProposedSignal",
         "type": "object"
+      },
+      "Provider": {
+        "enum": [
+          "BINANCE",
+          "OANDA",
+          "YAHOO"
+        ],
+        "title": "Provider",
+        "type": "string"
       },
       "QuantAlphaReport": {
         "additionalProperties": false,
@@ -1023,6 +1154,35 @@
           "rationale"
         ],
         "title": "RiskVerdict",
+        "type": "object"
+      },
+      "SessionType": {
+        "enum": [
+          "CRYPTO_24_7",
+          "FX_24_5",
+          "INDEX_CFD"
+        ],
+        "title": "SessionType",
+        "type": "string"
+      },
+      "SignalAlertEvent": {
+        "additionalProperties": false,
+        "description": "Alerta de nueva señal APPROVED.",
+        "properties": {
+          "signal": {
+            "$ref": "#/components/schemas/TradeSignalSchema"
+          },
+          "type": {
+            "const": "signal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "signal"
+        ],
+        "title": "SignalAlertEvent",
         "type": "object"
       },
       "SignalStatus": {
@@ -1202,6 +1362,83 @@
         "title": "StepUsage",
         "type": "object"
       },
+      "StreamErrorEvent": {
+        "additionalProperties": false,
+        "description": "Error del stream con mensaje en español.",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message"
+        ],
+        "title": "StreamErrorEvent",
+        "type": "object"
+      },
+      "StreamEventEnvelope": {
+        "description": "Envoltorio para el envoltorio raíz de eventos de stream.",
+        "discriminator": {
+          "mapping": {
+            "error": "#/components/schemas/StreamErrorEvent",
+            "signal": "#/components/schemas/SignalAlertEvent",
+            "tick": "#/components/schemas/TickUpdateEvent"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TickUpdateEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SignalAlertEvent"
+          },
+          {
+            "$ref": "#/components/schemas/StreamErrorEvent"
+          }
+        ],
+        "title": "StreamEventEnvelope"
+      },
+      "StructureEvent": {
+        "properties": {
+          "broken_swing_ts": {
+            "format": "date-time",
+            "title": "Broken Swing Ts",
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/StructureEventType"
+          }
+        },
+        "required": [
+          "ts",
+          "type",
+          "direction",
+          "broken_swing_ts",
+          "level"
+        ],
+        "title": "StructureEvent",
+        "type": "object"
+      },
       "StructureEventType": {
         "enum": [
           "BOS",
@@ -1209,6 +1446,80 @@
         ],
         "title": "StructureEventType",
         "type": "string"
+      },
+      "SwingKind": {
+        "enum": [
+          "HIGH",
+          "LOW"
+        ],
+        "title": "SwingKind",
+        "type": "string"
+      },
+      "SwingPoint": {
+        "properties": {
+          "confirmed_at": {
+            "format": "date-time",
+            "title": "Confirmed At",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SwingKind"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ts",
+          "kind",
+          "price",
+          "confirmed_at"
+        ],
+        "title": "SwingPoint",
+        "type": "object"
+      },
+      "TickUpdateEvent": {
+        "additionalProperties": false,
+        "description": "Actualización de precio (último cierre ingerido, no tiempo real).",
+        "properties": {
+          "price": {
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "title": "Price",
+            "type": "string"
+          },
+          "provisional": {
+            "const": true,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "type": {
+            "const": "tick",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "symbol",
+          "timeframe",
+          "price",
+          "provisional"
+        ],
+        "title": "TickUpdateEvent",
+        "type": "object"
       },
       "Timeframe": {
         "enum": [
@@ -1500,6 +1811,32 @@
         ]
       }
     },
+    "/api/v1/market/instruments": {
+      "get": {
+        "description": "Lista todos los instrumentos ordenados por id.",
+        "operationId": "list_instruments_api_v1_market_instruments_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InstrumentSchema"
+                  },
+                  "title": "Response List Instruments Api V1 Market Instruments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Instruments",
+        "tags": [
+          "market"
+        ]
+      }
+    },
     "/api/v1/market/ohlcv": {
       "get": {
         "operationId": "get_ohlcv_api_v1_market_ohlcv_get",
@@ -1571,6 +1908,86 @@
           }
         },
         "summary": "Get Ohlcv",
+        "tags": [
+          "market"
+        ]
+      }
+    },
+    "/api/v1/market/structure": {
+      "get": {
+        "description": "Calcula la estructura de mercado para un símbolo y timeframe.\n\nUsa `analyze_structure` sobre las últimas `limit` velas.\n- 404 si el símbolo no existe.\n- 422 si hay menos de `2n + 1` velas (mensaje con cantidades).\n- 422 si `n` está fuera de 1-10 (validación de FastAPI).",
+        "operationId": "get_market_structure_api_v1_market_structure_get",
+        "parameters": [
+          {
+            "description": "Símbolo canónico, p. ej. BTC/USDT",
+            "in": "query",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "description": "Símbolo canónico, p. ej. BTC/USDT",
+              "minLength": 1,
+              "title": "Symbol",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Timeframe de las velas",
+            "in": "query",
+            "name": "tf",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Timeframe",
+              "description": "Timeframe de las velas"
+            }
+          },
+          {
+            "description": "Número de velas a considerar",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "description": "Número de velas a considerar",
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Ventana de swing (n)",
+            "in": "query",
+            "name": "n",
+            "required": false,
+            "schema": {
+              "default": 3,
+              "description": "Ventana de swing (n)",
+              "maximum": 10,
+              "minimum": 1,
+              "title": "N",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketStructureResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Instrumento desconocido"
+          },
+          "422": {
+            "description": "Datos insuficientes o parámetros inválidos"
+          }
+        },
+        "summary": "Get Market Structure",
         "tags": [
           "market"
         ]
@@ -1680,6 +2097,28 @@
         "summary": "Get Active Signals",
         "tags": [
           "signals"
+        ]
+      }
+    },
+    "/api/v1/ws/stream/_openapi_docs": {
+      "get": {
+        "description": "Endpoint falso solo para que OpenAPI registre StreamEventEnvelope en components.",
+        "operationId": "_stream_openapi_docs_api_v1_ws_stream__openapi_docs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamEventEnvelope"
+                }
+              }
+            },
+            "description": "Documental: esquema de eventos de WebSocket (no es un endpoint real)."
+          }
+        },
+        "summary": " Stream Openapi Docs",
+        "tags": [
+          "stream"
         ]
       }
     }

@@ -1,10 +1,16 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import Home from "./page";
+import { render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-describe("Home (smoke)", () => {
-  it("renderiza el encabezado principal", () => {
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
+}));
+
+describe("Home page", () => {
+  it("redirige a /desk", async () => {
+    const { redirect } = await import("next/navigation");
+    const mod = await import("./page");
+    const Home = mod.default as () => null;
     render(<Home />);
-    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(redirect).toHaveBeenCalledWith("/desk");
   });
 });

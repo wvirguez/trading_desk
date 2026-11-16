@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/instruments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Instruments
+         * @description Lista todos los instrumentos ordenados por id.
+         */
+        get: operations["list_instruments_api_v1_market_instruments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/ohlcv": {
         parameters: {
             query?: never;
@@ -47,6 +67,31 @@ export interface paths {
         };
         /** Get Ohlcv */
         get: operations["get_ohlcv_api_v1_market_ohlcv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/structure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Market Structure
+         * @description Calcula la estructura de mercado para un símbolo y timeframe.
+         *
+         *     Usa `analyze_structure` sobre las últimas `limit` velas.
+         *     - 404 si el símbolo no existe.
+         *     - 422 si hay menos de `2n + 1` velas (mensaje con cantidades).
+         *     - 422 si `n` está fuera de 1-10 (validación de FastAPI).
+         */
+        get: operations["get_market_structure_api_v1_market_structure_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -84,6 +129,26 @@ export interface paths {
          * @description Señales `APPROVED`, de la más reciente a la más antigua.
          */
         get: operations["get_active_signals_api_v1_signals_active_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ws/stream/_openapi_docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Openapi Docs
+         * @description Endpoint falso solo para que OpenAPI registre StreamEventEnvelope en components.
+         */
+        get: operations["_stream_openapi_docs_api_v1_ws_stream__openapi_docs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -353,6 +418,21 @@ export interface components {
              */
             ts: string;
         };
+        /** FairValueGap */
+        FairValueGap: {
+            direction: components["schemas"]["Direction"];
+            /** High */
+            high: string;
+            /** Low */
+            low: string;
+            /** Mitigated At */
+            mitigated_at?: string | null;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+        };
         /** GuardDecision */
         GuardDecision: {
             /** Approved */
@@ -395,6 +475,24 @@ export interface components {
              */
             version: string;
         };
+        /** InstrumentSchema */
+        InstrumentSchema: {
+            asset_class: components["schemas"]["AssetClass"];
+            /** Base Currency */
+            base_currency: string;
+            /** Lot Size */
+            lot_size: string;
+            provider: components["schemas"]["Provider"];
+            /** Provider Symbol */
+            provider_symbol: string;
+            /** Quote Currency */
+            quote_currency: string;
+            session: components["schemas"]["SessionType"];
+            /** Symbol */
+            symbol: string;
+            /** Tick Size */
+            tick_size: string;
+        };
         JsonValue: unknown;
         /** KellyResult */
         KellyResult: {
@@ -422,6 +520,15 @@ export interface components {
             timeframes: components["schemas"]["TimeframeStructure"][];
             /** Zone Ts */
             zone_ts?: string | null;
+        };
+        /** MarketStructureResult */
+        MarketStructureResult: {
+            /** Events */
+            events: components["schemas"]["StructureEvent"][];
+            /** Fvgs */
+            fvgs: components["schemas"]["FairValueGap"][];
+            /** Swings */
+            swings: components["schemas"]["SwingPoint"][];
         };
         /**
          * Playbook
@@ -461,6 +568,11 @@ export interface components {
             take_profit: string;
             timeframe: components["schemas"]["Timeframe"];
         };
+        /**
+         * Provider
+         * @enum {string}
+         */
+        Provider: "BINANCE" | "OANDA" | "YAHOO";
         /** QuantAlphaReport */
         QuantAlphaReport: {
             kelly?: components["schemas"]["KellyResult"] | null;
@@ -499,6 +611,23 @@ export interface components {
             deterministic: components["schemas"]["GuardDecision"];
             /** Rationale */
             rationale: string;
+        };
+        /**
+         * SessionType
+         * @enum {string}
+         */
+        SessionType: "CRYPTO_24_7" | "FX_24_5" | "INDEX_CFD";
+        /**
+         * SignalAlertEvent
+         * @description Alerta de nueva señal APPROVED.
+         */
+        SignalAlertEvent: {
+            signal: components["schemas"]["TradeSignalSchema"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "signal";
         };
         /**
          * SignalStatus
@@ -584,10 +713,87 @@ export interface components {
             output_tokens: number;
         };
         /**
+         * StreamErrorEvent
+         * @description Error del stream con mensaje en español.
+         */
+        StreamErrorEvent: {
+            /** Message */
+            message: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "error";
+        };
+        /**
+         * StreamEventEnvelope
+         * @description Envoltorio para el envoltorio raíz de eventos de stream.
+         */
+        StreamEventEnvelope: components["schemas"]["TickUpdateEvent"] | components["schemas"]["SignalAlertEvent"] | components["schemas"]["StreamErrorEvent"];
+        /** StructureEvent */
+        StructureEvent: {
+            /**
+             * Broken Swing Ts
+             * Format: date-time
+             */
+            broken_swing_ts: string;
+            direction: components["schemas"]["Direction"];
+            /** Level */
+            level: string;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            type: components["schemas"]["StructureEventType"];
+        };
+        /**
          * StructureEventType
          * @enum {string}
          */
         StructureEventType: "BOS" | "CHOCH";
+        /**
+         * SwingKind
+         * @enum {string}
+         */
+        SwingKind: "HIGH" | "LOW";
+        /** SwingPoint */
+        SwingPoint: {
+            /**
+             * Confirmed At
+             * Format: date-time
+             */
+            confirmed_at: string;
+            kind: components["schemas"]["SwingKind"];
+            /** Price */
+            price: string;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+        };
+        /**
+         * TickUpdateEvent
+         * @description Actualización de precio (último cierre ingerido, no tiempo real).
+         */
+        TickUpdateEvent: {
+            /** Price */
+            price: string;
+            /**
+             * Provisional
+             * @constant
+             */
+            provisional: true;
+            /** Symbol */
+            symbol: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "tick";
+        };
         /**
          * Timeframe
          * @enum {string}
@@ -755,6 +961,26 @@ export interface operations {
             };
         };
     };
+    list_instruments_api_v1_market_instruments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstrumentSchema"][];
+                };
+            };
+        };
+    };
     get_ohlcv_api_v1_market_ohlcv_get: {
         parameters: {
             query: {
@@ -795,6 +1021,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    get_market_structure_api_v1_market_structure_get: {
+        parameters: {
+            query: {
+                /** @description Símbolo canónico, p. ej. BTC/USDT */
+                symbol: string;
+                /** @description Timeframe de las velas */
+                tf: components["schemas"]["Timeframe"];
+                /** @description Número de velas a considerar */
+                limit?: number;
+                /** @description Ventana de swing (n) */
+                n?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketStructureResult"];
+                };
+            };
+            /** @description Instrumento desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Datos insuficientes o parámetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -866,6 +1135,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    _stream_openapi_docs_api_v1_ws_stream__openapi_docs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Documental: esquema de eventos de WebSocket (no es un endpoint real). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamEventEnvelope"];
                 };
             };
         };
