@@ -1,0 +1,36 @@
+{
+  "tick": {
+    "type": "tick",
+    "symbol": "BTC/USDT",
+    "timeframe": "1h",
+    "price": "68000.50",
+    "provisional": true
+  },
+  "signal": {
+    "type": "signal",
+    "signal": {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "analysis_id": "44444444-4444-4444-8444-444444444444",
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "direction": "LONG",
+      "entry": "68000.50",
+      "stop_loss": "67500.00",
+      "take_profit": "69000.00",
+      "rr": "2.0",
+      "status": "APPROVED",
+      "rationale": "Señal nueva emitida por el orquestador de agentes.",
+      "regime": "TRENDING",
+      "asset_class": "CRYPTO",
+      "created_at": "2026-11-15T12:05:00Z",
+      "veto_reasons": [],
+      "size": {
+        "notional": "6800.05",
+        "risk_amount": "34.00",
+        "risk_pct": "0.50",
+        "stop_distance": "500.50",
+        "units": "0.10000"
+      }
+    }
+  }
+}

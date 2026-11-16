@@ -1,0 +1,41 @@
+{
+  "swings": [
+    {
+      "ts": "2026-11-15T02:00:00Z",
+      "price": "67050.00",
+      "kind": "LOW",
+      "confirmed_at": "2026-11-15T04:00:00Z"
+    },
+    {
+      "ts": "2026-11-15T06:00:00Z",
+      "price": "67480.00",
+      "kind": "HIGH",
+      "confirmed_at": "2026-11-15T08:00:00Z"
+    }
+  ],
+  "events": [
+    {
+      "ts": "2026-11-15T08:00:00Z",
+      "type": "BOS",
+      "direction": "LONG",
+      "level": "67480.00",
+      "broken_swing_ts": "2026-11-15T06:00:00Z"
+    }
+  ],
+  "fvgs": [
+    {
+      "ts": "2026-11-15T05:00:00Z",
+      "high": "67250.00",
+      "low": "67100.00",
+      "direction": "LONG",
+      "mitigated_at": null
+    },
+    {
+      "ts": "2026-11-15T07:00:00Z",
+      "high": "67350.00",
+      "low": "67280.00",
+      "direction": "SHORT",
+      "mitigated_at": "2026-11-15T08:00:00Z"
+    }
+  ]
+}

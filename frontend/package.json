@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "gen:api": "openapi-typescript ../backend/openapi.json -o types/api.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.3.1",

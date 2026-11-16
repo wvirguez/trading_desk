@@ -57,7 +57,12 @@ export default function StepCard({
   startedAt,
 }: StepCardProps) {
   return (
-    <div className="border border-zinc-800 rounded-lg bg-zinc-950/50 overflow-hidden">
+    <div
+      className="border border-zinc-800 rounded-lg bg-zinc-950/50 overflow-hidden"
+      data-testid="step-card"
+      data-step={step}
+      data-status={status}
+    >
       <div className="flex items-center gap-3 p-3 bg-zinc-900/50 border-b border-zinc-800">
         <span className="text-xs text-zinc-500 font-mono w-6 text-right">#{seq}</span>
         <span className="font-mono text-sm font-medium text-zinc-100 min-w-[100px]">{step}</span>

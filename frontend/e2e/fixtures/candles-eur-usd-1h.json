@@ -1,0 +1,14 @@
+[
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T00:00:00Z", "open": "1.09410", "high": "1.09460", "low": "1.09380", "close": "1.09430", "volume": "820.0"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T01:00:00Z", "open": "1.09430", "high": "1.09490", "low": "1.09400", "close": "1.09470", "volume": "790.5"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T02:00:00Z", "open": "1.09470", "high": "1.09510", "low": "1.09420", "close": "1.09450", "volume": "760.2"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T03:00:00Z", "open": "1.09450", "high": "1.09530", "low": "1.09430", "close": "1.09510", "volume": "810.7"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T04:00:00Z", "open": "1.09510", "high": "1.09560", "low": "1.09480", "close": "1.09530", "volume": "835.1"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T05:00:00Z", "open": "1.09530", "high": "1.09590", "low": "1.09500", "close": "1.09570", "volume": "845.6"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T06:00:00Z", "open": "1.09570", "high": "1.09610", "low": "1.09530", "close": "1.09590", "volume": "860.4"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T07:00:00Z", "open": "1.09590", "high": "1.09630", "low": "1.09540", "close": "1.09560", "volume": "870.9"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T08:00:00Z", "open": "1.09560", "high": "1.09600", "low": "1.09520", "close": "1.09580", "volume": "855.2"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T09:00:00Z", "open": "1.09580", "high": "1.09620", "low": "1.09550", "close": "1.09600", "volume": "840.8"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T10:00:00Z", "open": "1.09600", "high": "1.09650", "low": "1.09570", "close": "1.09630", "volume": "830.1"},
+  {"symbol": "EUR/USD", "timeframe": "1h", "ts": "2026-11-15T11:00:00Z", "open": "1.09630", "high": "1.09660", "low": "1.09590", "close": "1.09620", "volume": "825.7"}
+]

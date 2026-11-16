@@ -89,10 +89,10 @@ Cada subgrupo es un commit independiente. En todos: leer antes la guía de Next 
 
 ### 7F. E2E con Playwright (infraestructura, D124)
 
-- [ ] 7F.1. `playwright.config.ts` (Chromium, `webServer: next build && next start` en un puerto fijo, trazas en el primer reintento, `testDir: e2e`), scripts `test:e2e` en `package.json`, `e2e/` ya excluida de Vitest; `.gitignore` con `playwright-report/` y `test-results/`.
-- [ ] 7F.2. Utilidades de `e2e/support/`: simulación de REST (`page.route` a `/api/v1/**` con datos fijos: instrumentos, velas, estructura, señales), de SSE (cuerpo `text/event-stream` con eventos grabados) y de WebSocket (`page.routeWebSocket`), con *fixtures* en JSON versionados.
-- [ ] 7F.3. Pruebas `e2e/desk.spec.ts`: abrir `/desk` muestra velas, selectores y los overlays de la señal aprobada y las cajas FVG; cambiar de símbolo y de timeframe recarga las velas; un `TickUpdateEvent` del WebSocket simulado cambia el precio mostrado y el aviso de dato provisional está visible; un `SignalAlertEvent` muestra la alerta; `e2e/agents.spec.ts`: lanzar un análisis con SSE simulado muestra los cinco pasos y el resultado, y un 503 simulado muestra su mensaje y deja el formulario usable; la navegación llega a `/backtest` y `/journal` y muestra «Pendiente».
-- [ ] 7F.4. `npx playwright install chromium` y `npm run test:e2e` en verde en local. **No** se escribe aquí el flujo de paper trading (4.10 sigue pendiente). Commit: `Feat: E2E con Playwright del terminal de lectura`.
+- [x] 7F.1. `playwright.config.ts` (Chromium, `webServer: next build && next start` en un puerto fijo, trazas en el primer reintento, `testDir: e2e`), scripts `test:e2e` en `package.json`, `e2e/` ya excluida de Vitest; `.gitignore` con `playwright-report/` y `test-results/`.
+- [x] 7F.2. Utilidades de `e2e/support/`: simulación de REST (`page.route` a `/api/v1/**` con datos fijos: instrumentos, velas, estructura, señales), de SSE (cuerpo `text/event-stream` con eventos grabados) y de WebSocket (`page.routeWebSocket`), con *fixtures* en JSON versionados.
+- [x] 7F.3. Pruebas `e2e/desk.spec.ts`: abrir `/desk` muestra velas, selectores y los overlays de la señal aprobada y las cajas FVG; cambiar de símbolo y de timeframe recarga las velas; un `TickUpdateEvent` del WebSocket simulado cambia el precio mostrado y el aviso de dato provisional está visible; un `SignalAlertEvent` muestra la alerta; `e2e/agents.spec.ts`: lanzar un análisis con SSE simulado muestra los cinco pasos y el resultado, y un 503 simulado muestra su mensaje y deja el formulario usable; la navegación llega a `/backtest` y `/journal` y muestra «Pendiente».
+- [x] 7F.4. `npx playwright install chromium` y `npm run test:e2e` en verde en local. **No** se escribe aquí el flujo de paper trading (4.10 sigue pendiente). Commit: `Feat: E2E con Playwright del terminal de lectura`.
 
 ## 8. CI, documentación y cierre del roadmap
 

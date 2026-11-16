@@ -25,6 +25,10 @@ frontend/build/
 *.tsbuildinfo
 next-env.d.ts
 
+# ---------- Playwright ----------
+frontend/playwright-report/
+frontend/test-results/
+
 # ---------- Backend (Python) ----------
 .venv/
 __pycache__/

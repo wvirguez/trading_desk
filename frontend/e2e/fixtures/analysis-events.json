@@ -1,0 +1,277 @@
+[
+  {
+    "event": "analysis_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 1,
+    "symbol": "BTC/USDT",
+    "timeframe": "1h",
+    "timeframes": ["15m", "1h", "4h", "1d"],
+    "started_at": "2026-11-15T12:00:00Z"
+  },
+  {
+    "event": "step_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 2,
+    "step": "STRUCTURE"
+  },
+  {
+    "event": "step_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 3,
+    "step": "STRUCTURE",
+    "usage": {"model": "claude-sonnet-4-5", "input_tokens": 1200, "output_tokens": 300, "latency_ms": 1800, "cost_usd": "0.004500"},
+    "output": {
+      "symbol": "BTC/USDT",
+      "entry_timeframe": "1h",
+      "htf_alignment": "BULLISH",
+      "invalidation_level": "66800.00",
+      "zone_ts": "2026-11-15T05:00:00Z",
+      "reasoning": "Estructura alcista en 4h con BOS confirmado en 1h y FVG abierto.",
+      "timeframes": [
+        {
+          "timeframe": "4h",
+          "bias": "BULLISH",
+          "comment": "Serie de máximos y mínimos crecientes.",
+          "key_levels": ["67480.00", "67050.00"],
+          "last_event": "BOS",
+          "open_fvg_ts": ["2026-11-15T05:00:00Z"]
+        },
+        {
+          "timeframe": "1h",
+          "bias": "BULLISH",
+          "comment": "Ruptura del máximo previo con retesteo pendiente.",
+          "key_levels": ["67250.00"],
+          "last_event": "CHOCH",
+          "open_fvg_ts": []
+        }
+      ]
+    }
+  },
+  {
+    "event": "step_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 4,
+    "step": "QUANT"
+  },
+  {
+    "event": "step_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 5,
+    "step": "QUANT",
+    "usage": {"model": "claude-sonnet-4-5", "input_tokens": 900, "output_tokens": 180, "latency_ms": 1200, "cost_usd": "0.003000"},
+    "output": {
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "regime": "TRENDING",
+      "playbook": "TREND_FOLLOWING",
+      "reasoning": "Régimen tendencial con Hurst superior a 0,5 y ADF significativo.",
+      "stats": {
+        "adf_pvalue": 0.01,
+        "hurst": 0.62,
+        "n_obs": 240,
+        "volatility_ratio": 1.1,
+        "zscore": 1.4
+      },
+      "kelly": {"fraction": 0.12, "full_kelly": 0.2, "capped": true}
+    }
+  },
+  {
+    "event": "step_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 6,
+    "step": "PROPOSAL"
+  },
+  {
+    "event": "step_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 7,
+    "step": "PROPOSAL",
+    "usage": {"model": "claude-sonnet-4-5", "input_tokens": 700, "output_tokens": 120, "latency_ms": 900, "cost_usd": "0.002000"},
+    "output": {
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "direction": "LONG",
+      "entry": "67250.00",
+      "stop_loss": "66800.00",
+      "take_profit": "68150.00",
+      "rr": "2.0",
+      "source": "structure+quant"
+    }
+  },
+  {
+    "event": "step_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 8,
+    "step": "GUARDS"
+  },
+  {
+    "event": "step_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 9,
+    "step": "GUARDS",
+    "usage": {"model": "claude-sonnet-4-5", "input_tokens": 500, "output_tokens": 80, "latency_ms": 600, "cost_usd": "0.001500"},
+    "output": {
+      "approved": true,
+      "reasons": [],
+      "messages": ["R:R 2.0 ≥ mínimo 1.5", "Riesgo por operación 0,50% ≤ 1,00%"],
+      "rr": "2.0",
+      "size": {
+        "notional": "6725.00",
+        "risk_amount": "33.63",
+        "risk_pct": "0.50",
+        "stop_distance": "450.00",
+        "units": "0.10000"
+      }
+    }
+  },
+  {
+    "event": "step_started",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 10,
+    "step": "RISK_AUDIT"
+  },
+  {
+    "event": "step_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 11,
+    "step": "RISK_AUDIT",
+    "usage": {"model": "claude-sonnet-4-5", "input_tokens": 600, "output_tokens": 100, "latency_ms": 700, "cost_usd": "0.001800"},
+    "output": {
+      "decision": "APPROVE",
+      "concerns": ["La liquidez se reduce en la sesión asiática."],
+      "rationale": "El veto determinista no encontró incumplimientos de riesgo.",
+      "deterministic": {
+        "approved": true,
+        "reasons": [],
+        "messages": ["R:R 2.0 ≥ mínimo 1.5", "Riesgo por operación 0,50% ≤ 1,00%"],
+        "rr": "2.0",
+        "size": {
+          "notional": "6725.00",
+          "risk_amount": "33.63",
+          "risk_pct": "0.50",
+          "stop_distance": "450.00",
+          "units": "0.10000"
+        }
+      }
+    }
+  },
+  {
+    "event": "analysis_completed",
+    "analysis_id": "22222222-2222-4222-8222-222222222222",
+    "seq": 12,
+    "report": {
+      "analysis_id": "22222222-2222-4222-8222-222222222222",
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "outcome": "SIGNAL_APPROVED",
+      "warnings": ["El proveedor Yahoo puede entregar datos provisionales."],
+      "usage": {"model": "claude-sonnet-4-5", "input_tokens": 3900, "output_tokens": 780, "latency_ms": 5200, "cost_usd": "0.012800"},
+      "structure": {
+        "symbol": "BTC/USDT",
+        "entry_timeframe": "1h",
+        "htf_alignment": "BULLISH",
+        "invalidation_level": "66800.00",
+        "zone_ts": "2026-11-15T05:00:00Z",
+        "reasoning": "Estructura alcista en 4h con BOS confirmado en 1h y FVG abierto.",
+        "timeframes": [
+          {
+            "timeframe": "4h",
+            "bias": "BULLISH",
+            "comment": "Serie de máximos y mínimos crecientes.",
+            "key_levels": ["67480.00", "67050.00"],
+            "last_event": "BOS",
+            "open_fvg_ts": ["2026-11-15T05:00:00Z"]
+          },
+          {
+            "timeframe": "1h",
+            "bias": "BULLISH",
+            "comment": "Ruptura del máximo previo con retesteo pendiente.",
+            "key_levels": ["67250.00"],
+            "last_event": "CHOCH",
+            "open_fvg_ts": []
+          }
+        ]
+      },
+      "quant": {
+        "symbol": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "TRENDING",
+        "playbook": "TREND_FOLLOWING",
+        "reasoning": "Régimen tendencial con Hurst superior a 0,5 y ADF significativo.",
+        "stats": {
+          "adf_pvalue": 0.01,
+          "hurst": 0.62,
+          "n_obs": 240,
+          "volatility_ratio": 1.1,
+          "zscore": 1.4
+        },
+        "kelly": {"fraction": 0.12, "full_kelly": 0.2, "capped": true}
+      },
+      "proposal": {
+        "symbol": "BTC/USDT",
+        "timeframe": "1h",
+        "direction": "LONG",
+        "entry": "67250.00",
+        "stop_loss": "66800.00",
+        "take_profit": "68150.00",
+        "rr": "2.0",
+        "source": "structure+quant"
+      },
+      "guards": {
+        "approved": true,
+        "reasons": [],
+        "messages": ["R:R 2.0 ≥ mínimo 1.5", "Riesgo por operación 0,50% ≤ 1,00%"],
+        "rr": "2.0",
+        "size": {
+          "notional": "6725.00",
+          "risk_amount": "33.63",
+          "risk_pct": "0.50",
+          "stop_distance": "450.00",
+          "units": "0.10000"
+        }
+      },
+      "risk_verdict": {
+        "decision": "APPROVE",
+        "concerns": ["La liquidez se reduce en la sesión asiática."],
+        "rationale": "El veto determinista no encontró incumplimientos de riesgo.",
+        "deterministic": {
+          "approved": true,
+          "reasons": [],
+          "messages": ["R:R 2.0 ≥ mínimo 1.5", "Riesgo por operación 0,50% ≤ 1,00%"],
+          "rr": "2.0",
+          "size": {
+            "notional": "6725.00",
+            "risk_amount": "33.63",
+            "risk_pct": "0.50",
+            "stop_distance": "450.00",
+            "units": "0.10000"
+          }
+        }
+      },
+      "signal": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "analysis_id": "22222222-2222-4222-8222-222222222222",
+        "symbol": "BTC/USDT",
+        "timeframe": "1h",
+        "direction": "LONG",
+        "entry": "67250.00",
+        "stop_loss": "66800.00",
+        "take_profit": "68150.00",
+        "rr": "2.0",
+        "status": "APPROVED",
+        "rationale": "Estructura alcista con BOS confirmado en 1h; el modelo espera continuación tras la mitigación del FVG.",
+        "regime": "TRENDING",
+        "asset_class": "CRYPTO",
+        "created_at": "2026-11-15T12:00:00Z",
+        "veto_reasons": [],
+        "size": {
+          "notional": "6725.00",
+          "risk_amount": "33.63",
+          "risk_pct": "0.50",
+          "stop_distance": "450.00",
+          "units": "0.10000"
+        }
+      }
+    }
+  }
+]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createChart, CandlestickSeries, IChartApi, ISeriesApi, CandlestickSeriesPartialOptions, UTCTimestamp } from "lightweight-charts";
 import { useTerminalStore } from "@/store/terminal";
 import { useOhlcv } from "@/hooks/use-ohlcv";
@@ -8,6 +9,7 @@ import { useActiveSignals } from "@/hooks/use-signals";
 import { useStructure } from "@/hooks/use-structure";
 import { useStream } from "@/hooks/use-stream";
 import { candlesToSeries, type CandleSeriesItem } from "@/lib/chart-data";
+import { formatPrice } from "@/lib/format";
 import { signalToOverlay, fvgToBox, type FvgBox } from "@/lib/overlays";
 import ChartOverlays from "./overlays";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,19 +18,47 @@ interface CandleChartProps {
   className?: string;
 }
 
+function createCandleChart(element: HTMLDivElement): {
+  chart: IChartApi;
+  series: ISeriesApi<"Candlestick">;
+} {
+  const chart = createChart(element, {
+    layout: { background: { color: "#0f1117" }, textColor: "#d1d4dc" },
+    grid: { vertLines: { color: "#1e222d" }, horzLines: { color: "#1e222d" } },
+    crosshair: { mode: 1 },
+    timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#1e222d" },
+    rightPriceScale: { borderColor: "#1e222d" },
+    autoSize: true,
+  });
+
+  const series = chart.addSeries(CandlestickSeries, {
+    upColor: "#26a69a",
+    downColor: "#ef5350",
+    borderVisible: false,
+    wickUpColor: "#26a69a",
+    wickDownColor: "#ef5350",
+  } satisfies CandlestickSeriesPartialOptions);
+
+  return { chart, series };
+}
+
 export default function CandleChart({ className }: CandleChartProps) {
-  const { symbol, timeframe } = useTerminalStore();
+  const { symbol, timeframe, instruments } = useTerminalStore();
+  const queryClient = useQueryClient();
   const { data: candles, isLoading, isError, error } = useOhlcv(symbol, timeframe);
   const { data: signals, isLoading: signalsLoading } = useActiveSignals(symbol);
   const { data: structure, isLoading: structureLoading } = useStructure(symbol, timeframe);
 
   const seriesRef = useRef<CandleSeriesItem[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const chartApiRef = useRef<IChartApi | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
   const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
-  const [chartReady, setChartReady] = useState(false);
   const [showSignals, setShowSignals] = useState(true);
   const [showFvgs, setShowFvgs] = useState(true);
+
+  const instrument = instruments.find((item) => item.symbol === symbol);
+  const tickSize = instrument?.tick_size ?? "0.01";
+  const lastClose = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
 
   const signalOverlay = signals?.[0] ? signalToOverlay(signals[0]) : null;
   const fvgBoxes = structure?.fvgs
@@ -47,51 +77,36 @@ export default function CandleChart({ className }: CandleChartProps) {
   }, [series]);
 
   const handleSignal = useCallback(() => {
-    // La señal se refleja a través de useActiveSignals que tiene refetchInterval
-    // y se invalidará por el callback onWarning en useStream
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: ["active-signals"] });
+  }, [queryClient]);
 
   const handleWarning = useCallback(() => {
-    // El aviso se muestra en la barra superior via useStream
+    // El aviso de datos provisionales se deriva de lastTick en la barra del gráfico.
   }, []);
 
-  const { connectionState, lastTick } = useStream(symbol, timeframe, {
+  const { connectionState, lastTick, lastSignal } = useStream(symbol, timeframe, {
     onTick: handleTick,
     onSignal: handleSignal,
     onWarning: handleWarning,
   });
 
-  useEffect(() => {
-    if (!containerRef.current || chartReady) return;
+  const displayedPrice = lastTick?.price ?? lastClose;
 
-    const newChart = createChart(containerRef.current, {
-      layout: { background: { color: "#0f1117" }, textColor: "#d1d4dc" },
-      grid: { vertLines: { color: "#1e222d" }, horzLines: { color: "#1e222d" } },
-      crosshair: { mode: 1 },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#1e222d" },
-      rightPriceScale: { borderColor: "#1e222d" },
-      autoSize: true,
-    });
+  const attachChart = useCallback((element: HTMLDivElement | null) => {
+    chartApiRef.current?.remove();
+    chartApiRef.current = null;
 
-    const newSeries = newChart.addSeries(CandlestickSeries, {
-      upColor: "#26a69a",
-      downColor: "#ef5350",
-      borderVisible: false,
-      wickUpColor: "#26a69a",
-      wickDownColor: "#ef5350",
-    } satisfies CandlestickSeriesPartialOptions);
-
-    setChart(newChart);
-    setSeries(newSeries);
-    setChartReady(true);
-
-    return () => {
-      newChart.remove();
+    if (!element) {
       setChart(null);
       setSeries(null);
-      setChartReady(false);
-    };
-  }, [chartReady]);
+      return;
+    }
+
+    const created = createCandleChart(element);
+    chartApiRef.current = created.chart;
+    setChart(created.chart);
+    setSeries(created.series);
+  }, []);
 
   useEffect(() => {
     if (!series || !candles) return;
@@ -132,6 +147,11 @@ export default function CandleChart({ className }: CandleChartProps) {
   return (
     <div className="flex flex-col h-[400px] w-full">
       <div className="flex items-center gap-2 mb-2 px-2">
+        {displayedPrice && (
+          <span data-testid="last-price" className="text-sm font-mono text-zinc-100">
+            {formatPrice(displayedPrice, tickSize)}
+          </span>
+        )}
         <label className="flex items-center gap-1 text-sm text-zinc-300">
           <input
             type="checkbox"
@@ -163,9 +183,22 @@ export default function CandleChart({ className }: CandleChartProps) {
             Precio = último cierre ingerido (no es tiempo real)
           </span>
         )}
+        {lastSignal && (
+          <span className="text-xs text-green-400" data-testid="signal-alert">
+            Nueva señal aprobada recibida: {lastSignal.signal.symbol} {lastSignal.signal.direction}
+          </span>
+        )}
+        <span
+          data-testid="chart-overlays-status"
+          data-signal-count={signalOverlay ? "1" : "0"}
+          data-fvg-count={String(fvgBoxes.length)}
+          data-signals-visible={showSignals ? "true" : "false"}
+          data-fvgs-visible={showFvgs ? "true" : "false"}
+          className="sr-only"
+        />
       </div>
       <div
-        ref={containerRef}
+        ref={attachChart}
         className={`flex-1 w-full ${className ?? ""}`}
         style={{ minHeight: "350px" }}
       />

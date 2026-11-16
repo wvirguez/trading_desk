@@ -1,0 +1,14 @@
+[
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T00:00:00Z", "open": "67000.00", "high": "67120.00", "low": "66940.00", "close": "67060.00", "volume": "10.5"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T01:00:00Z", "open": "67060.00", "high": "67180.00", "low": "67010.00", "close": "67140.00", "volume": "11.2"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T02:00:00Z", "open": "67140.00", "high": "67220.00", "low": "67080.00", "close": "67100.00", "volume": "9.8"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T03:00:00Z", "open": "67100.00", "high": "67250.00", "low": "67050.00", "close": "67230.00", "volume": "12.1"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T04:00:00Z", "open": "67230.00", "high": "67320.00", "low": "67180.00", "close": "67290.00", "volume": "10.9"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T05:00:00Z", "open": "67290.00", "high": "67400.00", "low": "67240.00", "close": "67360.00", "volume": "13.4"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T06:00:00Z", "open": "67360.00", "high": "67480.00", "low": "67300.00", "close": "67420.00", "volume": "14.0"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T07:00:00Z", "open": "67420.00", "high": "67520.00", "low": "67130.00", "close": "67150.00", "volume": "16.2"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T08:00:00Z", "open": "67150.00", "high": "67280.00", "low": "67080.00", "close": "67220.00", "volume": "12.7"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T09:00:00Z", "open": "67220.00", "high": "67340.00", "low": "67160.00", "close": "67300.00", "volume": "11.5"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T10:00:00Z", "open": "67300.00", "high": "67410.00", "low": "67250.00", "close": "67390.00", "volume": "10.1"},
+  {"symbol": "BTC/USDT", "timeframe": "1h", "ts": "2026-11-15T11:00:00Z", "open": "67390.00", "high": "67500.00", "low": "67200.00", "close": "67250.00", "volume": "9.4"}
+]

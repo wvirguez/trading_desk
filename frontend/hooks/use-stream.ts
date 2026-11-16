@@ -37,6 +37,10 @@ export function useStream(
 ): UseStreamReturn {
   const clientRef = useRef<WsClient | null>(null);
   const seriesRef = useRef<CandleSeriesItem[]>([]);
+  const callbacksRef = useRef(callbacks);
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
   const [connectionState, setConnectionState] = useState<ConnectionState>("Desconectado");
   const [lastTick, setLastTick] = useState<components["schemas"]["TickUpdateEvent"] | null>(null);
   const [lastSignal, setLastSignal] = useState<components["schemas"]["SignalAlertEvent"] | null>(null);
@@ -45,12 +49,12 @@ export function useStream(
     (tick: components["schemas"]["TickUpdateEvent"]) => {
       const tickData = {
         ts: Math.floor(new Date().getTime() / 1000),
-        price: parseFloat(tick.price),
+        price: tick.price,
       };
       seriesRef.current = applyTick(seriesRef.current, tickData, timeframe);
-      callbacks.onTick?.(seriesRef.current);
+      callbacksRef.current.onTick?.(seriesRef.current);
     },
-    [timeframe, callbacks]
+    [timeframe]
   );
 
   useEffect(() => {
@@ -79,18 +83,18 @@ export function useStream(
       switch (eventType) {
         case "tick": {
           setLastTick(event);
-          callbacks.onWarning?.("Precio = último cierre ingerido (no es tiempo real)");
+          callbacksRef.current.onWarning?.("Precio = último cierre ingerido (no es tiempo real)");
           applyTickToSeries(event);
           break;
         }
         case "signal": {
           setLastSignal(event);
-          callbacks.onSignal?.(event.signal);
-          callbacks.onWarning?.("Nueva señal aprobada recibida");
+          callbacksRef.current.onSignal?.(event.signal);
+          callbacksRef.current.onWarning?.("Nueva señal aprobada recibida");
           break;
         }
         case "error": {
-          callbacks.onError?.(event.message);
+          callbacksRef.current.onError?.(event.message);
           break;
         }
         default: {
@@ -106,7 +110,7 @@ export function useStream(
       client.close();
       clientRef.current = null;
     };
-  }, [symbol, timeframe, applyTickToSeries, callbacks, WebSocketCtor]);
+  }, [symbol, timeframe, applyTickToSeries, WebSocketCtor]);
 
   return {
     connectionState,

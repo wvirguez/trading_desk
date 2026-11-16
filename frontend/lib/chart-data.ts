@@ -13,7 +13,7 @@ export interface CandleSeriesItem {
 
 export interface TickData {
   ts: number;
-  price: number;
+  price: string | number;
 }
 
 const TIMEFRAME_SECONDS: Record<string, number> = {
@@ -89,14 +89,16 @@ export function applyTick(
   tick: TickData,
   timeframe: string = "1h",
 ): CandleSeriesItem[] {
+  const price = typeof tick.price === "string" ? Number(tick.price) : tick.price;
+
   if (series.length === 0) {
     return [
       {
         time: tick.ts,
-        open: tick.price,
-        high: tick.price,
-        low: tick.price,
-        close: tick.price,
+        open: price,
+        high: price,
+        low: price,
+        close: price,
         gap: false,
       },
     ];
@@ -111,9 +113,9 @@ export function applyTick(
     const updated = [...series];
     updated[lastIndex] = {
       ...lastCandle,
-      high: Math.max(lastCandle.high, tick.price),
-      low: Math.min(lastCandle.low, tick.price),
-      close: tick.price,
+      high: Math.max(lastCandle.high, price),
+      low: Math.min(lastCandle.low, price),
+      close: price,
     };
     return updated;
   }
@@ -124,10 +126,10 @@ export function applyTick(
     ...series,
     {
       time: tick.ts,
-      open: tick.price,
-      high: tick.price,
-      low: tick.price,
-      close: tick.price,
+      open: price,
+      high: price,
+      low: price,
+      close: price,
       gap: isGap,
     },
   ];

@@ -1,0 +1,8 @@
+[
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-14T04:00:00Z", "open": "66500.00", "high": "66900.00", "low": "66300.00", "close": "66750.00", "volume": "42.0"},
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-14T08:00:00Z", "open": "66750.00", "high": "67200.00", "low": "66600.00", "close": "67100.00", "volume": "45.3"},
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-14T12:00:00Z", "open": "67100.00", "high": "67600.00", "low": "66950.00", "close": "67450.00", "volume": "51.2"},
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-14T16:00:00Z", "open": "67450.00", "high": "67900.00", "low": "67300.00", "close": "67800.00", "volume": "49.8"},
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-14T20:00:00Z", "open": "67800.00", "high": "68200.00", "low": "67650.00", "close": "68050.00", "volume": "47.6"},
+  {"symbol": "BTC/USDT", "timeframe": "4h", "ts": "2026-11-15T00:00:00Z", "open": "68050.00", "high": "68300.00", "low": "67850.00", "close": "68100.00", "volume": "38.4"}
+]

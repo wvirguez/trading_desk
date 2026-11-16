@@ -1,0 +1,8 @@
+[
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-14T04:00:00Z", "open": "1.09180", "high": "1.09320", "low": "1.09110", "close": "1.09270", "volume": "3200.0"},
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-14T08:00:00Z", "open": "1.09270", "high": "1.09410", "low": "1.09220", "close": "1.09360", "volume": "3450.5"},
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-14T12:00:00Z", "open": "1.09360", "high": "1.09520", "low": "1.09310", "close": "1.09480", "volume": "3620.8"},
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-14T16:00:00Z", "open": "1.09480", "high": "1.09630", "low": "1.09430", "close": "1.09590", "volume": "3710.2"},
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-14T20:00:00Z", "open": "1.09590", "high": "1.09740", "low": "1.09540", "close": "1.09700", "volume": "3595.6"},
+  {"symbol": "EUR/USD", "timeframe": "4h", "ts": "2026-11-15T00:00:00Z", "open": "1.09700", "high": "1.09890", "low": "1.09660", "close": "1.09840", "volume": "3180.4"}
+]

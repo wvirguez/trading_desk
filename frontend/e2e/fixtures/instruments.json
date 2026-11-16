@@ -1,0 +1,46 @@
+[
+  {
+    "symbol": "BTC/USDT",
+    "provider": "BINANCE",
+    "provider_symbol": "BTCUSDT",
+    "asset_class": "CRYPTO",
+    "base_currency": "BTC",
+    "quote_currency": "USDT",
+    "tick_size": "0.01",
+    "lot_size": "0.00001",
+    "session": "CRYPTO_24_7"
+  },
+  {
+    "symbol": "ETH/USDT",
+    "provider": "BINANCE",
+    "provider_symbol": "ETHUSDT",
+    "asset_class": "CRYPTO",
+    "base_currency": "ETH",
+    "quote_currency": "USDT",
+    "tick_size": "0.01",
+    "lot_size": "0.0001",
+    "session": "CRYPTO_24_7"
+  },
+  {
+    "symbol": "EUR/USD",
+    "provider": "OANDA",
+    "provider_symbol": "EUR_USD",
+    "asset_class": "FX",
+    "base_currency": "EUR",
+    "quote_currency": "USD",
+    "tick_size": "0.00001",
+    "lot_size": "0.00001",
+    "session": "FX_24_5"
+  },
+  {
+    "symbol": "XAU/USD",
+    "provider": "OANDA",
+    "provider_symbol": "XAU_USD",
+    "asset_class": "METAL",
+    "base_currency": "XAU",
+    "quote_currency": "USD",
+    "tick_size": "0.01",
+    "lot_size": "0.0001",
+    "session": "FX_24_5"
+  }
+]
