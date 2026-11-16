@@ -60,11 +60,11 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 - [x] **4.3 Overlays de señal.** Zona de entrada, SL, TP y cajas FVG dibujadas a partir de `TradeSignalSchema`.
 - [x] **4.4 WebSocket `/ws/stream/{symbol}`.** Backend: `TickUpdateEvent` y `SignalAlertEvent`. Frontend: hook que actualiza la última vela.
 - [x] **4.5 Feed de razonamiento de agentes.** Consume el SSE de `/agents/analyze` y muestra la traza paso a paso.
-- [x] **4.6 Paper trading: backend.** `POST /signals/{id}/execute` (simulado), `OrderReceiptSchema` y simulador de fills contra OHLCV.
-- [x] **4.7 Blotter de ejecución.** Tabla de órdenes y posiciones simuladas, con su PnL.
+- [ ] **4.6 Paper trading: backend.** `POST /signals/{id}/execute` (simulado), `OrderReceiptSchema` y simulador de fills contra OHLCV. *Nota (2026-11-16):* reabierta; estaba marcada sin código. Ver `specs/2026-11-16-paper-trading-backtest-journal/`.
+- [ ] **4.7 Blotter de ejecución.** Tabla de órdenes y posiciones simuladas, con su PnL. *Nota (2026-11-16):* reabierta; estaba marcada sin código.
 - [ ] **4.8 Vista de backtest.** Formulario `BacktestConfig`, curva de capital y métricas.
 - [ ] **4.9 Journal.** Comparación entre señales emitidas y resultado simulado (base del criterio de éxito del MVP).
-- [ ] **4.10 E2E con Playwright.** Flujo completo: analizar → ver señal en el gráfico → ejecutar en paper → verla en el blotter.
+- [ ] **4.10 E2E con Playwright.** Flujo completo: analizar → ver señal en el gráfico → ejecutar en paper → verla en el blotter. *Nota:* el E2E de lectura se hizo en la parte 1 de la Fase 4; falta el flujo con paper trading.
 
 ---
 
