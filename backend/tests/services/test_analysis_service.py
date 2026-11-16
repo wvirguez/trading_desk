@@ -71,7 +71,6 @@ from app.services.analysis import (
     InsufficientTimeframesError,
     analyze,
 )
-from app.services.portfolio import SIMULATED_PORTFOLIO_WARNING
 from tests.quant.synthetic import mean_reverting, random_walk, trending
 
 pytestmark = [pytest.mark.db, pytest.mark.usefixtures("use_test_db")]
@@ -350,9 +349,32 @@ async def test_camino_feliz_cinco_pasos_y_senal_aprobada(
     assert report.signal.entry == t.last_close
     assert report.usage.input_tokens == sum(r.input_tokens for r in rows)
     assert report.usage.latency_ms == sum(r.latency_ms for r in rows)
-    assert SIMULATED_PORTFOLIO_WARNING in report.warnings
+    assert not any("cartera simulado" in w.lower() for w in report.warnings)
     assert any("Sin tope de coste" in w for w in report.warnings)
     assert any("Yahoo" in w for w in report.warnings)
+
+
+async def test_el_analisis_refresca_las_ordenes_antes_de_leer_la_cartera(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await seed_world(db_session)
+    t = await truth(db_session)
+    calls: list[str] = []
+    real_load = analysis_module.load_portfolio_state
+
+    async def fake_refresh(session: AsyncSession) -> None:
+        calls.append("refresh")
+
+    async def spy_load(session: AsyncSession, settings: Settings) -> Any:
+        calls.append("load")
+        return await real_load(session, settings)
+
+    monkeypatch.setattr(analysis_module, "refresh_orders", fake_refresh)
+    monkeypatch.setattr(analysis_module, "load_portfolio_state", spy_load)
+    report = completed_report(await run(db_session, happy_factory(t)))
+
+    assert calls == ["refresh", "load"]
+    assert report.signal is not None
 
 
 async def test_los_pasos_de_codigo_guardan_entrada_y_salida(db_session: AsyncSession) -> None:
@@ -424,7 +446,7 @@ async def test_veto_determinista_por_perdida_diaria(
             realized_pnl_today=Decimal(-300),  # 3 % = límite exacto
             open_positions=[],
         )
-        return state, [SIMULATED_PORTFOLIO_WARNING]
+        return state, []
 
     monkeypatch.setattr(analysis_module, "load_portfolio_state", losing)
     report = completed_report(await run(db_session, happy_factory(t)))

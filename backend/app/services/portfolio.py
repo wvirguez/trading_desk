@@ -1,39 +1,50 @@
-"""Estado de cartera simulado y correlación real para las guardas (D90).
+"""Estado de cartera real y correlación real para las guardas (D90, D138).
 
-Hasta el paper trading (4.6) no hay PnL real: `equity = day_start_equity = ACCOUNT_EQUITY_USD`,
-`realized_pnl_today = 0` y las posiciones abiertas son las señales `EXECUTED` (vacío por ahora).
-La matriz de correlación sí es real: cierres de los instrumentos en el marco de entrada.
+El estado se deriva de `paper_orders`, sin columnas de saldo (D138):
+- `equity = ACCOUNT_EQUITY_USD + Σ realized_pnl` de todas las órdenes cerradas; el PnL no
+  realizado de las abiertas no entra.
+- `realized_pnl_today = Σ realized_pnl` de las órdenes con `closed_at` en el día UTC actual.
+- `day_start_equity = equity - realized_pnl_today`.
+- `open_positions` = órdenes `PENDING_FILL`/`OPEN` con su `risk_amount`.
 No hace `commit`.
 """
 
 from collections.abc import Sequence
-from decimal import Decimal
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.quant.data import candles_to_frame
 from app.repositories import ohlcv as ohlcv_repo
+from app.repositories import paper_orders as orders_repo
 from app.repositories import trade_signals as signals_repo
 from app.risk.correlation import correlation_matrix
 from app.schemas.enums import Timeframe
 from app.schemas.risk import PortfolioState
 
-SIMULATED_PORTFOLIO_WARNING = "Estado de cartera simulado: sin PnL real hasta el paper trading"
-
 
 async def load_portfolio_state(
-    session: AsyncSession, settings: Settings
+    session: AsyncSession, settings: Settings, now: datetime | None = None
 ) -> tuple[PortfolioState, list[str]]:
-    """Estado de cartera (D90) y los avisos que debe propagar el análisis."""
-    open_positions = await signals_repo.list_executed(session)
-    state = PortfolioState(
-        equity=settings.account_equity_usd,
-        day_start_equity=settings.account_equity_usd,
-        realized_pnl_today=Decimal(0),
-        open_positions=open_positions,
+    """Estado de cartera (D138) y los avisos que debe propagar el análisis (hoy, ninguno).
+
+    `now` inyecta el reloj (por defecto, ahora en UTC) para delimitar el día UTC.
+    """
+    moment = (now or datetime.now(UTC)).astimezone(UTC)
+    day_start = moment.replace(hour=0, minute=0, second=0, microsecond=0)
+    total_pnl = await orders_repo.sum_realized_pnl(session)
+    pnl_today = await orders_repo.sum_realized_pnl_between(
+        session, day_start, day_start + timedelta(days=1)
     )
-    return state, [SIMULATED_PORTFOLIO_WARNING]
+    equity = settings.account_equity_usd + total_pnl
+    state = PortfolioState(
+        equity=equity,
+        day_start_equity=equity - pnl_today,
+        realized_pnl_today=pnl_today,
+        open_positions=await signals_repo.list_executed(session),
+    )
+    return state, []
 
 
 async def load_correlation_matrix(

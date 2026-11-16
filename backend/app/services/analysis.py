@@ -102,6 +102,7 @@ from app.schemas.instrument import InstrumentSchema
 from app.schemas.risk import GuardDecision, PortfolioState, ProposedTrade
 from app.schemas.signals import ProposedSignal, TradeSignalSchema, model_text
 from app.services.backtest import InstrumentNotFoundError, InsufficientDataError
+from app.services.paper import refresh_orders
 from app.services.portfolio import load_correlation_matrix, load_portfolio_state
 from app.services.signals import build_trade_signal, persist_signal
 
@@ -320,6 +321,7 @@ async def analyze(
 
     models = {role: factory(role) for role in AgentRole}  # AgentsNotConfiguredError -> 503
 
+    await refresh_orders(session)  # D135: el estado de cartera parte de órdenes al día
     portfolio, portfolio_warnings = await load_portfolio_state(session, settings)
     instruments = [(r.id, r.symbol) for r in await instruments_repo.list_all(session)]
     correlations = await load_correlation_matrix(

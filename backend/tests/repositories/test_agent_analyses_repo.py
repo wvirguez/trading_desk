@@ -205,6 +205,7 @@ async def test_unique_analysis_id_step_rechaza_el_paso_repetido(db_session: Asyn
 async def test_downgrade_y_upgrade_de_0009(db_session: AsyncSession) -> None:
     await db_session.commit()
     iid = await _btc_id(db_session)
+    await db_session.commit()  # suelta el bloqueo de lectura sobre `instruments` (0010 lo necesita)
     aid = uuid.uuid4()
     params = {"a": aid, "i": iid}
     raw = _RAW_INSERT.replace("uuid_generate_v4()", ":a").replace(":step", "'STRUCTURE'")

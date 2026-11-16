@@ -1,14 +1,17 @@
 """Acceso a `trade_signals` y conversión a `TradeSignalSchema` (D96)."""
 
 from datetime import datetime
-from decimal import Decimal
+from typing import TYPE_CHECKING, Any, cast
+from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models.instrument import Instrument
+from app.models.paper_order import PaperOrder
 from app.models.trade_signal import TradeSignal
+from app.repositories import paper_orders as paper_orders_repo
 from app.schemas.enums import (
     AssetClass,
     Direction,
@@ -19,6 +22,9 @@ from app.schemas.enums import (
 )
 from app.schemas.risk import OpenPosition, PositionSizeResult
 from app.schemas.signals import TradeSignalSchema
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import CursorResult
 
 _HUNDRED = 100
 
@@ -117,25 +123,58 @@ async def list_active(
 
 
 async def list_executed(session: AsyncSession) -> list[OpenPosition]:
-    """Posiciones abiertas = señales `EXECUTED` (D90; vacío hasta el paper trading, 4.6).
-
-    `risk_amount` nulo (filas anteriores a la Fase 3) cuenta como 0.
-    """
-    stmt = (
-        select(TradeSignal, Instrument.symbol)
-        .join(Instrument, Instrument.id == TradeSignal.instrument_id)
-        .where(TradeSignal.status == SignalStatus.EXECUTED.value)
-        .order_by(TradeSignal.created_at, TradeSignal.id)
-    )
-    rows = (await session.execute(stmt)).all()
+    """Posiciones abiertas = órdenes `PENDING_FILL`/`OPEN` de `paper_orders` (D138)."""
+    rows = await paper_orders_repo.list_open_orders(session)
     return [
         OpenPosition(
-            symbol=symbol,
-            direction=Direction(signal.direction),
-            risk_amount=signal.risk_amount if signal.risk_amount is not None else Decimal(0),
+            symbol=instrument.symbol,
+            direction=Direction(order.direction),
+            risk_amount=order.risk_amount,
         )
-        for signal, symbol in rows
+        for order, instrument in rows
     ]
+
+
+async def get_signal_for_update(session: AsyncSession, signal_id: UUID) -> TradeSignal | None:
+    """Lee la señal bloqueando su fila (`FOR UPDATE`) hasta el fin de la transacción (D136)."""
+    stmt = (
+        select(TradeSignal)
+        .where(TradeSignal.id == signal_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def mark_executed(session: AsyncSession, signal_id: UUID) -> None:
+    """Pasa la señal `APPROVED` a `EXECUTED`; falla si no existe o no estaba aprobada."""
+    stmt = (
+        update(TradeSignal)
+        .where(TradeSignal.id == signal_id, TradeSignal.status == SignalStatus.APPROVED.value)
+        .values(status=SignalStatus.EXECUTED.value, updated_at=func.now())
+        .execution_options(synchronize_session="fetch")
+    )
+    result = await session.execute(stmt)
+    if cast("CursorResult[Any]", result).rowcount != 1:
+        raise ValueError(f"La señal {signal_id} no existe o no está APPROVED")
+    await session.flush()
+
+
+async def list_for_journal(
+    session: AsyncSession, symbol: str | None, limit: int
+) -> list[tuple[TradeSignal, Instrument, PaperOrder | None]]:
+    """Señales de todos los estados con `analysis_id` y su orden (LEFT JOIN), recientes primero."""
+    stmt = (
+        select(TradeSignal, Instrument, PaperOrder)
+        .join(Instrument, Instrument.id == TradeSignal.instrument_id)
+        .outerjoin(PaperOrder, PaperOrder.signal_id == TradeSignal.id)
+        .where(TradeSignal.analysis_id.is_not(None))
+        .order_by(TradeSignal.created_at.desc(), TradeSignal.id)
+        .limit(limit)
+    )
+    if symbol is not None:
+        stmt = stmt.where(Instrument.symbol == symbol)
+    return [(sig, inst, order) for sig, inst, order in (await session.execute(stmt)).all()]
 
 
 async def list_approved_since(

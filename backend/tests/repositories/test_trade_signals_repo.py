@@ -15,10 +15,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.repositories import instruments as instruments_repo
+from app.repositories import paper_orders as orders_repo
 from app.repositories import trade_signals as repo
 from app.schemas.enums import (
     AssetClass,
     Direction,
+    OrderStatus,
     RegimeLabel,
     SignalStatus,
     Timeframe,
@@ -330,3 +332,118 @@ async def test_list_approved_since_orden_ascendente_por_created_at(
 
     result = await repo.list_approved_since(db_session, "BTC/USDT", T0)
     assert [s.created_at for s in result] == sorted([s.created_at for s in result])
+
+
+async def test_list_executed_lee_ordenes_activas_de_paper_orders(
+    db_session: AsyncSession,
+) -> None:
+    eur = await _iid(db_session, "EUR/USD")
+    btc = await _iid(db_session)
+    pending, opened, closed, approved = (
+        _signal(symbol="EUR/USD"),
+        _signal(),
+        _signal(),
+        _signal(),
+    )
+    rows = {}
+    for s, iid in ((pending, eur), (opened, btc), (closed, btc), (approved, btc)):
+        rows[s.id] = await repo.insert_signal(db_session, s, iid)
+    t = T0 + timedelta(hours=1)
+    o1 = await orders_repo.insert_order(db_session, rows[pending.id], T0)
+    o2 = await orders_repo.insert_order(db_session, rows[opened.id], t)
+    o3 = await orders_repo.insert_order(db_session, rows[closed.id], t)
+    await orders_repo.update_order_state(
+        db_session, o2, status=OrderStatus.OPEN, updated_at=t, fill_price=Decimal(100), filled_at=t
+    )
+    await orders_repo.update_order_state(
+        db_session,
+        o3,
+        status=OrderStatus.CLOSED_SL,
+        updated_at=t,
+        fill_price=Decimal(100),
+        filled_at=t,
+        exit_price=Decimal(95),
+        closed_at=t,
+        realized_pnl=Decimal(-10),
+    )
+    assert o1.status == "PENDING_FILL"
+
+    got = await repo.list_executed(db_session)
+    assert [(p.symbol, p.direction, p.risk_amount) for p in got] == [
+        ("EUR/USD", Direction.LONG, Decimal(100)),
+        ("BTC/USDT", Direction.LONG, Decimal(100)),
+    ]
+
+
+async def test_list_executed_ignora_senales_executed_sin_orden(
+    db_session: AsyncSession,
+) -> None:
+    iid = await _iid(db_session)
+    await repo.insert_signal(db_session, _signal(status=SignalStatus.APPROVED), iid)
+    sig = await repo.insert_signal(db_session, _signal(), iid)
+    await repo.mark_executed(db_session, sig.id)
+    assert await repo.list_executed(db_session) == []
+
+
+async def test_get_signal_for_update_y_mark_executed(db_session: AsyncSession) -> None:
+    iid = await _iid(db_session)
+    sig = await repo.insert_signal(db_session, _signal(), iid)
+    locked = await repo.get_signal_for_update(db_session, sig.id)
+    assert locked is not None
+    assert locked.status == "APPROVED"
+    assert await repo.get_signal_for_update(db_session, uuid.uuid4()) is None
+    await repo.mark_executed(db_session, sig.id)
+    assert locked.status == "EXECUTED"
+    with pytest.raises(ValueError, match="no está APPROVED"):
+        await repo.mark_executed(db_session, sig.id)
+    with pytest.raises(ValueError, match="no existe"):
+        await repo.mark_executed(db_session, uuid.uuid4())
+
+
+async def test_list_for_journal_todos_los_estados_con_su_orden(
+    db_session: AsyncSession,
+) -> None:
+    btc = await _iid(db_session)
+    eur = await _iid(db_session, "EUR/USD")
+    rejected = _signal(
+        status=SignalStatus.REJECTED,
+        created_at=T0,
+        veto=[VetoReason.RR_BELOW_MIN],
+    )
+    approved = _signal(created_at=T0 + timedelta(hours=1))
+    executed = _signal(created_at=T0 + timedelta(hours=2))
+    fx = _signal(symbol="EUR/USD", created_at=T0 + timedelta(hours=3))
+    old = uuid.uuid4()
+    await db_session.execute(
+        text(
+            "INSERT INTO trade_signals (id, instrument_id, timeframe, direction, entry, "
+            "stop_loss, take_profit, status, created_at, updated_at) "
+            "VALUES (:id, :i, '1h', 'LONG', 100, 95, 110, 'APPROVED', :ts, :ts)"
+        ),
+        {"id": old, "i": btc, "ts": T0 + timedelta(hours=4)},
+    )
+    exec_row = None
+    for s, iid in ((rejected, btc), (approved, btc), (executed, btc), (fx, eur)):
+        row = await repo.insert_signal(db_session, s, iid)
+        if s.id == executed.id:
+            exec_row = row
+    assert exec_row is not None
+    order = await orders_repo.insert_order(db_session, exec_row, T0 + timedelta(hours=2))
+    await repo.mark_executed(db_session, executed.id)
+
+    result = await repo.list_for_journal(db_session, None, 50)
+    assert [(s.id, o.id if o else None) for s, _, o in result] == [
+        (fx.id, None),
+        (executed.id, order.id),
+        (approved.id, None),
+        (rejected.id, None),
+    ]  # sin la fila anterior a la Fase 3
+    assert [s.status for s, _, _ in result] == ["APPROVED", "EXECUTED", "APPROVED", "REJECTED"]
+    assert [i.symbol for _, i, _ in result] == ["EUR/USD", "BTC/USDT", "BTC/USDT", "BTC/USDT"]
+
+    btc_only = await repo.list_for_journal(db_session, "BTC/USDT", 50)
+    assert [s.id for s, _, _ in btc_only] == [executed.id, approved.id, rejected.id]
+    assert [s.id for s, _, _ in await repo.list_for_journal(db_session, "BTC/USDT", 2)] == [
+        executed.id,
+        approved.id,
+    ]

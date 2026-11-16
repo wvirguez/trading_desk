@@ -1,6 +1,7 @@
 """Reglas de arquitectura (D66): el núcleo cuantitativo y de riesgo es código puro.
 
-`app/quant/` y `app/risk/` no importan FastAPI, SQLAlchemy, httpx, pydantic_ai ni anthropic;
+`app/quant/`, `app/risk/` y `app/paper/` no importan FastAPI, SQLAlchemy, httpx, pydantic_ai
+ni anthropic;
 el I/O vive en `services/` y `api/`. Además, `pandas` solo se usa en `market_data/yahoo.py` y
 `scipy` no se importa directamente en el código propio.
 """
@@ -11,7 +12,7 @@ from pathlib import Path
 import pytest
 
 APP = Path(__file__).resolve().parent.parent / "app"
-PURE_PACKAGES = ("quant", "risk")
+PURE_PACKAGES = ("quant", "risk", "paper")
 FORBIDDEN_IN_PURE = {"fastapi", "sqlalchemy", "httpx", "starlette", "asyncpg"}
 FORBIDDEN_AI = {"pydantic_ai", "anthropic"}  # D97: los agentes viven en `agents/`
 

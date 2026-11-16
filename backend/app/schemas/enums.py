@@ -124,3 +124,18 @@ class AnalysisOutcome(StrEnum):
     SIGNAL_APPROVED = "SIGNAL_APPROVED"
     SIGNAL_REJECTED = "SIGNAL_REJECTED"
     NO_TRADE = "NO_TRADE"
+
+
+class OrderStatus(StrEnum):
+    PENDING_FILL = "PENDING_FILL"  # ejecutada, aún sin vela posterior
+    OPEN = "OPEN"  # rellenada, sin tocar SL/TP
+    CLOSED_TP = "CLOSED_TP"
+    CLOSED_SL = "CLOSED_SL"
+
+
+class JournalOutcome(StrEnum):
+    NOT_EXECUTED = "NOT_EXECUTED"  # aprobada sin ejecutar, o rechazada
+    PENDING_FILL = "PENDING_FILL"
+    OPEN = "OPEN"
+    WIN = "WIN"  # CLOSED_TP
+    LOSS = "LOSS"  # CLOSED_SL

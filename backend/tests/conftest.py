@@ -54,7 +54,7 @@ async def db_session() -> AsyncIterator[AsyncSession]:
     try:
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
             await session.execute(
-                text("TRUNCATE ohlcv_bars, trade_signals, strategies, agent_analyses")
+                text("TRUNCATE ohlcv_bars, paper_orders, trade_signals, strategies, agent_analyses")
             )
             await session.commit()
             yield session
