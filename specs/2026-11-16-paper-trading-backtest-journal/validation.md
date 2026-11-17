@@ -61,7 +61,7 @@ Requisitos: Postgres local en marcha, `DATABASE_URL` apuntando a la BD de desarr
 
 ### Casos límite
 
-- **Sin velas posteriores:** la orden queda `PENDING_FILL` con la explicación «Esperando la siguiente vela de <tf>; ingiere datos con la CLI.»; no se rellena con una vela anterior.
+- **Sin velas posteriores:** la orden queda `PENDING_FILL` con la explicación «PENDING_FILL: orden ejecutada que aún espera una vela posterior para rellenarse.»; no se rellena con una vela anterior.
 - **SL y TP en la misma vela:** gana SL (`CLOSED_SL`); documentado en la UI.
 - **Hueco** que supera el SL o el TP al `open`: la salida es al `open`, no al nivel; el PnL lo refleja.
 - **Fill que empeora el riesgo:** si `|fill − SL| × units` > `risk_amount`, la orden lleva el aviso; el tamaño no se recalcula.

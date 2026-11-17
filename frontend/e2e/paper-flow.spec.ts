@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { installRestMocks } from "./support/mock-rest";
 import { installStreamMock } from "./support/mock-ws";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 const SIGNAL_ID = "11111111-1111-4111-8111-111111111111";
 
 async function analyzeAndGoToDesk(page: Page): Promise<void> {
@@ -79,7 +79,7 @@ test.describe("flujo completo de paper trading", () => {
 
     // Otra pestaña ejecuta antes la misma señal: la lista local sigue desactualizada.
     const firstStatus = await page.evaluate(async ({ id, apiUrl }) => {
-      const response = await fetch(`${apiUrl}/signals/${id}/execute`, {
+      const response = await fetch(`${apiUrl}/api/v1/signals/${id}/execute`, {
         method: "POST",
       });
       return response.status;

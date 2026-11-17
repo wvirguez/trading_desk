@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTerminalStore } from "@/store/terminal";
 import { useInstruments } from "@/hooks/use-instruments";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +10,15 @@ export default function SymbolSelect() {
   const { symbol, setSymbol } = useTerminalStore();
   const { data: instruments, isLoading, isError, error } = useInstruments();
 
-  if (isLoading) {
+  // Primer render idéntico en servidor y cliente: evita el desajuste de hidratación
+  // cuando la caché de consultas ya tiene datos al hidratar.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  if (!mounted || isLoading) {
     return (
       <div className="w-48">
         <Skeleton className="h-10 w-full" data-testid="symbol-select-skeleton" />

@@ -98,6 +98,7 @@ Todas las funcionalidades se desarrollan con el enfoque **«esquemas primero»**
 | `ohlcv_bars` | **Hypertable de TimescaleDB**: `instrument_id`, `timeframe`, `ts`, `open`, `high`, `low`, `close`, `volume`. Clave única `(instrument_id, timeframe, ts)`. |
 | `agent_analyses` | Registro de auditoría **de solo inserción** de cada ejecución de agente: `id`, `instrument_id`, `timeframe`, régimen, puntuación de confianza, traza de razonamiento (JSONB), modelo, tokens, coste, latencia y `created_at`. |
 | `strategies` | Reglas algorítmicas parametrizadas: `id`, nombre, clase de activo, parámetros (JSONB), Sharpe, máximo drawdown y tasa de aciertos. |
+| `paper_orders` | Órdenes simuladas (migración `0010`), a lo sumo una por señal (`UNIQUE(signal_id)`). **Modificable**: avanzan de estado al refrescar (a diferencia de `agent_analyses`, de solo inserción). |
 | `trade_signals` | Señales validadas por el motor de riesgo: `id`, `strategy_id`, `analysis_id`, dirección (`LONG`/`SHORT`), entrada, SL, TP, R:R, tamaño de posición y estado (`PENDING`, `APPROVED`, `REJECTED`, `EXECUTED`). |
 
 ### Orquestación multiagente
@@ -125,7 +126,10 @@ Pipeline async secuencial: **Structure → Quant → veto determinista → RiskA
 | `POST` | `/agents/analyze` | Análisis multiagente | `AnalyzeRequest` → stream SSE + `AgentReportSchema` |
 | `POST` | `/quant/backtest` | Simulación vectorizada de una estrategia | `BacktestConfig` → `BacktestMetricsSchema` |
 | `GET` | `/signals/active` | Señales aprobadas por el sistema de riesgo | `asset_class` → `List[TradeSignalSchema]` |
-| `POST` | `/signals/{id}/execute` | Ejecución **simulada** (paper trading; pendiente, 4.6/4.7) | `ExecutionConfirm` → `OrderReceiptSchema` |
+| `POST` | `/signals/{id}/execute` | Ejecución **simulada** (paper trading); 409 si no está aprobada, ya se ejecutó o la cartera la veta | — → `OrderReceiptSchema` (201) |
+| `POST` | `/paper/refresh` | Avanza las órdenes abiertas con las velas ya ingeridas (idempotente) | — → `PaperRefreshResult` |
+| `GET` | `/paper/blotter` | Órdenes, posiciones y estado de cartera (solo lectura) | `status`, `limit` → `BlotterSchema` |
+| `GET` | `/journal` | Señales emitidas frente a su resultado simulado | `symbol`, `limit` → `JournalSchema` |
 | `WS` | `/ws/stream/{symbol}` | Ticks (último cierre ingerido, provisional) y alertas de señal | `TickUpdateEvent` \| `SignalAlertEvent` |
 
 ### Esquema canónico `TradeSignalSchema`
@@ -319,7 +323,7 @@ Si un golden falla, no lo regeneres sin entender por qué cambió el número: es
 
 ### Agentes (Fase 3)
 
-> **Avisos.** (1) Las señales **no caducan**: `GET /signals/active` devuelve toda señal `APPROVED`, por antigua que sea; usa `created_at` para filtrar. (2) La propuesta (entrada, SL, TP) es **determinista y está sin calibrar** (`PROPOSAL_TARGET_RR`, `PROPOSAL_SL_ATR_BUFFER`); el LLM no escribe precios. (3) **Sin la clave del proveedor activo (`ANTHROPIC_API_KEY` o `GEMINI_API_KEY`) el endpoint responde `503`**; el resto del sistema no depende de la clave. (4) El **estado de cartera es simulado** (`equity = ACCOUNT_EQUITY_USD`, PnL del día 0, sin posiciones abiertas) hasta el paper trading: las guardas de pérdida diaria y exposición no se ejercen con datos reales. (5) **Kelly es informativo**: sus entradas `p`/`b` son una hipótesis del agente sin calibrar y nunca fijan el tamaño, que sale solo de `position_size`. (6) Los prompts aún no se han validado con el modelo real (los tests usan `TestModel`/`FunctionModel`; la CI nunca llama a la API). Nada de esto es una recomendación de inversión.
+> **Avisos.** (1) Las señales **no caducan**: `GET /signals/active` devuelve toda señal `APPROVED`, por antigua que sea; usa `created_at` para filtrar. (2) La propuesta (entrada, SL, TP) es **determinista y está sin calibrar** (`PROPOSAL_TARGET_RR`, `PROPOSAL_SL_ATR_BUFFER`); el LLM no escribe precios. (3) **Sin la clave del proveedor activo (`ANTHROPIC_API_KEY` o `GEMINI_API_KEY`) el endpoint responde `503`**; el resto del sistema no depende de la clave. (4) El **estado de cartera es real respecto a las órdenes simuladas** (`equity = ACCOUNT_EQUITY_USD` + PnL realizado de las órdenes cerradas; posiciones abiertas = órdenes sin cerrar); sin órdenes equivale al antiguo estado simulado (equity = `ACCOUNT_EQUITY_USD`, PnL 0). El PnL no realizado no entra en `equity`. (5) **Kelly es informativo**: sus entradas `p`/`b` son una hipótesis del agente sin calibrar y nunca fijan el tamaño, que sale solo de `position_size`. (6) Los prompts aún no se han validado con el modelo real (los tests usan `TestModel`/`FunctionModel`; la CI nunca llama a la API). Nada de esto es una recomendación de inversión.
 
 Flujo (secuencial, `backend/app/services/analysis.py`): **Structure → Quant → propuesta (código) → veto determinista (código) → Auditor**.
 
@@ -376,7 +380,7 @@ Variables de entorno (se incrustan en el *build*; ninguna es secreta; también e
 
 | Variable | Defecto | Significado |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Base del backend para REST y SSE |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Origen del backend (sin `/api/v1`; las rutas lo incluyen) para REST y SSE |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:8000/api/v1/ws` | Base del WebSocket |
 
 El navegador llama **directo** al backend, sin proxy de Next: define `CORS_ALLOW_ORIGINS` en `backend/.env` (por defecto `http://localhost:3000`) o el navegador bloqueará REST y SSE. No hay `rewrites`.
@@ -384,13 +388,51 @@ El navegador llama **directo** al backend, sin proxy de Next: define `CORS_ALLOW
 Rutas y alcance:
 
 - `/` redirige a `/desk`.
-- `/desk`: gráfico de velas con selectores de símbolo y timeframe, overlays de la señal aprobada (entrada, SL, TP), cajas FVG y panel lateral de señales/análisis.
+- `/desk`: gráfico de velas con selectores de símbolo y timeframe, overlays de la señal aprobada (entrada, SL, TP), cajas FVG, panel lateral de señales/análisis y panel inferior con pestañas «Señales» (con «Ejecutar (paper)») y «Blotter».
 - `/agents`: formulario y feed de razonamiento del análisis SSE, paso a paso.
-- `/backtest` y `/journal`: páginas marcadoras honestas («Pendiente: paso 4.8» / «4.9»); aún no hay blotter ni journal.
+- `/backtest`: formulario de `BacktestConfig`, métricas y curva de capital (véase «Backtest»).
+- `/journal`: señales emitidas frente a su resultado simulado (véase «Journal»).
 
-**Qué es provisional:** los ticks del WebSocket son el **último cierre ingerido**, no un feed en tiempo real, y la UI lo rotula; `/backtest` y `/journal` no están implementadas (pasos 4.8/4.9); los datos de FX, metales e índices vienen de Yahoo y son provisionales (véase el aviso de ingesta).
+#### Paper trading
 
-E2E con Playwright y red simulada (no requiere backend, base de datos ni claves de LLM):
+Solo simulación: no hay conexión con brokers.
+
+1. Analiza un símbolo en `/agents`. Si el análisis termina con una señal `APPROVED`, aparece en `/desk` (panel «Señales») con sus overlays.
+2. Pulsa «Ejecutar (paper)» y luego «Confirmar ejecución simulada» (confirmación en dos pasos). El backend vuelve a evaluar las guardas de cartera con el estado real; si vetan, responde 409 con los motivos y la señal sigue `APPROVED`. El tamaño de la orden es el `units` de la señal; no se recalcula.
+3. En la pestaña «Blotter» aparece la orden. El botón «Actualizar» (`POST /paper/refresh`) la avanza con las velas ya ingeridas. El blotter se relee solo cada 15 s, pero esa lectura **no** avanza órdenes. Para que haya velas nuevas hay que ingerirlas con la CLI.
+
+Estados de una orden:
+
+| Estado | Significado |
+| :--- | :--- |
+| `PENDING_FILL` | Ejecutada, aún sin vela posterior: espera la siguiente vela del timeframe de la señal. |
+| `OPEN` | Rellenada, sin haber tocado SL ni TP. Tiene PnL **no realizado** (contra el último cierre ingerido). |
+| `CLOSED_TP` | Cerrada por take profit. |
+| `CLOSED_SL` | Cerrada por stop loss. |
+
+Supuestos del simulador (`backend/app/paper/simulator.py`; función pura y determinista):
+
+- El *fill* es el `open` de la primera vela del timeframe de la señal cuya apertura sea posterior o igual a la ejecución.
+- Desde la vela de fill se evalúa vela a vela. Si SL y TP caben en la misma vela, **gana el SL** (conservador).
+- Hueco: si el `open` de una vela ya está más allá del SL o del TP, la salida es al `open`, no al nivel.
+- **Sin costes, comisiones, swap ni slippage**, y sin rechazos de orden: el PnL simulado puede sobrestimar el resultado real.
+- Las horas de fill y de salida son la apertura de la vela, no la hora real del evento.
+- Si el riesgo real tras el fill supera el `risk_amount` de la señal, la orden lleva un aviso (el tamaño no se recalcula).
+- Una orden solo termina por SL o TP: no hay cierre manual, cancelación ni órdenes límite.
+
+Circuit breaker: con una pérdida realizada del día ≥ 3 % (`MAX_DAILY_LOSS_PCT`) no se puede ejecutar ninguna señal más ese día. **El día es UTC** (de 00:00 a 24:00 UTC), no el de tu zona horaria.
+
+#### Backtest
+
+`/backtest` llama a `POST /quant/backtest` con símbolo y timeframe del terminal, rango opcional, capital inicial y parámetros de la estrategia (`zscore_window`, `entry_z`, `exit_z`, `allow_short`). Muestra métricas, avisos y la curva de capital. La validación vive en el backend (los 404/422 se muestran tal cual). **El backtest no modela costes ni slippage.** Un buen resultado histórico no implica rentabilidad futura.
+
+#### Journal
+
+`/journal` compara cada señal emitida con su resultado simulado (consulta derivada de `trade_signals` y `paper_orders`, sin tabla propia). Lista señales de todos los estados, incluidas las `REJECTED`, con sus motivos de veto. Resultados: `NOT_EXECUTED`, `PENDING_FILL`, `OPEN`, `WIN` (TP) y `LOSS` (SL). Compara el R:R **emitido** (un objetivo) con el R **realizado** (`PnL / riesgo`) y calcula win rate y expectancy en R sobre las órdenes cerradas. Con menos de 30 cerradas el resumen avisa de que la muestra es pequeña y las métricas no son concluyentes; sin cerradas se muestra «—». El `rationale` es texto del modelo, no verificado.
+
+**Qué es provisional:** los ticks del WebSocket son el **último cierre ingerido**, no un feed en tiempo real, y la UI lo rotula; el PnL no realizado usa ese mismo último cierre; los datos de FX, metales e índices vienen de Yahoo y son provisionales (véase el aviso de ingesta); las señales y los prompts están sin calibrar.
+
+E2E con Playwright y red simulada (no requiere backend, base de datos ni claves de LLM). Cubre lectura (`desk`, `agents`), el flujo de paper trading (analizar, ejecutar, blotter, journal) y `/backtest`:
 
 ```bash
 cd frontend
@@ -398,7 +440,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Playwright levanta `next build && next start` en el puerto 3100 y simula REST, SSE y WebSocket con `page.route` y `page.routeWebSocket` a partir de fixtures JSON en `e2e/fixtures/`.
+Playwright levanta `next build && next start` en el puerto 3100 y simula REST, SSE y WebSocket con `page.route` y `page.routeWebSocket` a partir de fixtures JSON en `e2e/fixtures/`; los flujos de paper trading usan un estado en memoria por prueba (`e2e/support/mock-state.ts`, usado por `mock-rest.ts`; también hay `mock-ws.ts` y `fixtures.ts` en `e2e/support/`), de modo que el resultado de la orden es un dato del *mock*, no del simulador real (ese se prueba en el backend).
 
 > ⚠️ Next.js 16 introduce cambios incompatibles con versiones anteriores. Antes de escribir código de frontend, consulta `frontend/node_modules/next/dist/docs/` (véase [`frontend/AGENTS.md`](frontend/AGENTS.md)).
 
@@ -431,7 +473,7 @@ La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta todo lo a
 - **Veto determinista:** cualquier propuesta con R:R < 1,8 se rechaza en código, antes de que la vea el `RiskAuditorAgent`.
 - **Circuit breakers:**
   - El riesgo máximo por operación es el **1,0 %** del capital (configurable).
-  - La pérdida máxima diaria es el **3,0 %**. Al alcanzarla, la ejecución de señales se desactiva durante el resto del día.
+  - La pérdida máxima diaria es el **3,0 %**. Al alcanzarla, la ejecución de señales se desactiva durante el resto del día (UTC); se aplica al ejecutar.
 - **Solo paper trading en el MVP:** no hay conexión con brokers para ejecutar órdenes reales. La ejecución con capital real, siempre con confirmación humana obligatoria (HITL), queda para después del MVP.
 - **Auditabilidad:** cada análisis de agente se guarda de forma inmutable en `agent_analyses`.
 

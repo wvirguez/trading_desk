@@ -1,6 +1,6 @@
 # Plan — Fase 4 (parte 2): paper trading, backtest, journal y E2E completo
 
-Regla de cada grupo: **esquema → tests → implementación**, y termina en un commit verde (backend: `ruff check`, `ruff format --check`, `mypy app`, `pytest`; frontend: `lint`, `typecheck`, `test`, `build`). Decisiones D132–D146 en [`requirements.md`](requirements.md). Los grupos se pueden implementar por separado, en este orden. Los comandos del backend se ejecutan en `backend/` y los del frontend en `frontend/`. Cada tarea lleva su casilla `[ ]`: se marca `[x]` al implementarla y comprobarla.
+Regla de cada grupo: **esquema → tests → implementación**, y termina en un commit verde (backend: `ruff check`, `ruff format --check`, `mypy app`, `pytest`; frontend: `lint`, `typecheck`, `test`, `build`). Decisiones D132–D153 en [`requirements.md`](requirements.md). Los grupos se pueden implementar por separado, en este orden. Los comandos del backend se ejecutan en `backend/` y los del frontend en `frontend/`. Cada tarea lleva su casilla `[ ]`: se marca `[x]` al implementarla y comprobarla.
 
 **Antes de cualquier tarea de UI (grupo 7)** hay que leer la guía relevante en `frontend/node_modules/next/dist/docs/01-app/`: Next 16 tiene cambios incompatibles y `cacheComponents` está activo.
 
@@ -92,9 +92,9 @@ Cada subgrupo es un commit independiente. En todos: leer antes la guía de Next 
 
 ## 8. CI, documentación y cierre del roadmap
 
-- [ ] 8.1. CI (`.github/workflows/ci.yml`): confirmar que el job de backend aplica la migración 0010 a la BD de test y ejecuta los tests `db`; que `export_openapi.py` y `gen:api` siguen comprobando el contrato sin diff; que el job `e2e` ejecuta los nuevos flujos; y que no hay claves de LLM en el entorno.
-- [ ] 8.2. `specs/tech-stack.md`: changelog «2026-11-16 (Fase 4.2)»: migración `0010_paper_orders`; estado de cartera **real** desde órdenes simuladas (cierra D90); simulador de fills con sus supuestos (D134: fill al open de la siguiente vela, SL antes que TP, hueco, sin costes ni slippage); circuit breaker de −3 % diario aplicado al ejecutar (D137); **sin dependencias nuevas**; sin variables de entorno nuevas. Actualizar las secciones que cambien (p. ej. §7: `paper_orders` modificable frente a `agent_analyses` de solo inserción).
-- [ ] 8.3. `README.md`: secciones «Paper trading», «Backtest» y «Journal» (cómo ejecutar una señal, qué significa cada estado, supuestos del simulador, el día UTC, qué es provisional, cómo ejecutar `npm run test:e2e`).
-- [ ] 8.4. Registrar en `requirements.md` las decisiones de implementación (D147 en adelante) y actualizar la tabla de riesgos. Corregir en el roadmap las notas de 4.10 de la parte 1.
+- [x] 8.1. CI (`.github/workflows/ci.yml`): confirmar que el job de backend aplica la migración 0010 a la BD de test y ejecuta los tests `db`; que `export_openapi.py` y `gen:api` siguen comprobando el contrato sin diff; que el job `e2e` ejecuta los nuevos flujos; y que no hay claves de LLM en el entorno.
+- [x] 8.2. `specs/tech-stack.md`: changelog «2026-11-16 (Fase 4.2)»: migración `0010_paper_orders`; estado de cartera **real** desde órdenes simuladas (cierra D90); simulador de fills con sus supuestos (D134: fill al open de la siguiente vela, SL antes que TP, hueco, sin costes ni slippage); circuit breaker de −3 % diario aplicado al ejecutar (D137); **sin dependencias nuevas**; sin variables de entorno nuevas. Actualizar las secciones que cambien (p. ej. §7: `paper_orders` modificable frente a `agent_analyses` de solo inserción).
+- [x] 8.3. `README.md`: secciones «Paper trading», «Backtest» y «Journal» (cómo ejecutar una señal, qué significa cada estado, supuestos del simulador, el día UTC, qué es provisional, cómo ejecutar `npm run test:e2e`).
+- [x] 8.4. Registrar en `requirements.md` las decisiones de implementación (D147 en adelante) y actualizar la tabla de riesgos. Corregir en el roadmap las notas de 4.10 de la parte 1.
 - [ ] 8.5. Smoke manual (véase `validation.md`), PR y CI en verde. En la PR, indicar cómo se marcaron 4.6/4.7 sin código.
 - [ ] 8.6. Marcar **4.6–4.10** como `[x]` en `specs/roadmap.md`. Esta tarea la hace el usuario o el flujo principal tras validar con `/spec-validation`. Commit: `Ud: actualizacion de roadmap.md`.

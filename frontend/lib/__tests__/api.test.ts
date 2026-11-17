@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 vi.mock("@/lib/env", () => ({
-  getApiUrl: () => "http://localhost:8000/api/v1",
+  getApiUrl: () => "http://localhost:8000",
 }));
 
 describe("apiGet", () => {
@@ -26,7 +26,7 @@ describe("apiGet", () => {
     await apiGet("/test");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/test",
+      "http://localhost:8000/test",
       expect.objectContaining({ method: "GET" }),
     );
   });
@@ -92,7 +92,7 @@ describe("apiPost", () => {
 
     expect(data).toEqual({ ok: true });
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/test",
+      "http://localhost:8000/test",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ a: 1 }),

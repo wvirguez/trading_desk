@@ -19,7 +19,7 @@ function normalizeUrl(url: string): string {
 }
 
 export function getApiUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const normalized = normalizeUrl(raw);
   if (!isValidUrl(normalized)) {
     throw new Error(`NEXT_PUBLIC_API_URL inválida: "${raw}". Debe ser una URL http(s) válida.`);

@@ -64,7 +64,7 @@ Leyenda: `[ ]` pendiente · `[x]` hecha
 - [ ] **4.7 Blotter de ejecución.** Tabla de órdenes y posiciones simuladas, con su PnL. *Nota (2026-11-16):* reabierta; estaba marcada sin código.
 - [ ] **4.8 Vista de backtest.** Formulario `BacktestConfig`, curva de capital y métricas.
 - [ ] **4.9 Journal.** Comparación entre señales emitidas y resultado simulado (base del criterio de éxito del MVP).
-- [ ] **4.10 E2E con Playwright.** Flujo completo: analizar → ver señal en el gráfico → ejecutar en paper → verla en el blotter. *Nota:* el E2E de lectura se hizo en la parte 1 de la Fase 4; falta el flujo con paper trading.
+- [ ] **4.10 E2E con Playwright.** Flujo completo: analizar → ver señal en el gráfico → ejecutar en paper → verla en el blotter. *Nota:* la parte 1 de la Fase 4 solo cubrió el E2E de **lectura** (`desk.spec.ts`, `agents.spec.ts`). El flujo con paper trading (`paper-flow.spec.ts`) y el de backtest (`backtest.spec.ts`) se especifican y escriben en la parte 2 (`specs/2026-11-16-paper-trading-backtest-journal/`), con red simulada y estado en el *mock* (D144); el simulador real se prueba en el backend.
 
 ---
 

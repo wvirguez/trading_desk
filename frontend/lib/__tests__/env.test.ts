@@ -14,15 +14,15 @@ describe("lib/env", () => {
 
   it("usa valores por defecto de desarrollo cuando no hay variables", async () => {
     const { apiUrl, wsUrl } = await import("../env");
-    expect(apiUrl).toBe("http://localhost:8000/api/v1");
+    expect(apiUrl).toBe("http://localhost:8000");
     expect(wsUrl).toBe("ws://localhost:8000/api/v1/ws");
   });
 
   it("normaliza la URL eliminando la barra final", async () => {
-    process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1/";
+    process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000/";
     process.env.NEXT_PUBLIC_WS_URL = "ws://localhost:8000/api/v1/ws/";
     const { apiUrl, wsUrl } = await import("../env");
-    expect(apiUrl).toBe("http://localhost:8000/api/v1");
+    expect(apiUrl).toBe("http://localhost:8000");
     expect(wsUrl).toBe("ws://localhost:8000/api/v1/ws");
   });
 
