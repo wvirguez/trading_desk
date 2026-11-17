@@ -177,3 +177,40 @@ def test_rr_message_truncates_instead_of_rounding_up() -> None:
     d = evaluate_trade(long_trade("1.0885998"), make_state(), {}, EURUSD, S)
     assert d.reasons == [VetoReason.RR_BELOW_MIN]
     assert d.messages == ["R:R 1.79 por debajo del mínimo 1.8"]
+
+
+# --- Guardas de cartera sin recalcular tamaño (D147) ---
+
+
+def test_portfolio_limit_vetoes_usa_el_riesgo_dado_sin_calcular_tamano() -> None:
+    from app.risk.guards import portfolio_limit_vetoes
+
+    state = make_state([_pos("GBP/USD", Direction.LONG, "250")])
+    # 250 abierto + 100 nuevo = 3.5 % > 3 % del capital, aunque el tamaño propio sería 1 %.
+    vetoes = portfolio_limit_vetoes("EUR/USD", Direction.LONG, D(100), state, {}, S)
+    assert [r for r, _ in vetoes] == [VetoReason.OPEN_RISK_LIMIT, VetoReason.CORRELATED_RISK_LIMIT]
+    assert all("%" in m for _, m in vetoes)
+
+
+def test_portfolio_limit_vetoes_sin_motivos_con_cartera_vacia() -> None:
+    from app.risk.guards import portfolio_limit_vetoes
+
+    assert portfolio_limit_vetoes("EUR/USD", Direction.LONG, D(100), make_state(), {}, S) == []
+
+
+def test_portfolio_limit_vetoes_perdida_diaria_en_el_limite() -> None:
+    from app.risk.guards import daily_loss_limit_reached, portfolio_limit_vetoes
+
+    state = make_state(pnl="-300")
+    assert daily_loss_limit_reached(state, S)
+    assert not daily_loss_limit_reached(make_state(pnl="-299.99"), S)
+    vetoes = portfolio_limit_vetoes("EUR/USD", Direction.LONG, D(100), state, {}, S)
+    assert [r for r, _ in vetoes] == [VetoReason.DAILY_LOSS_LIMIT]
+    assert "3.00" in vetoes[0][1]
+
+
+def test_portfolio_limit_vetoes_capital_invalido() -> None:
+    from app.risk.guards import portfolio_limit_vetoes
+
+    with pytest.raises(ValueError, match="capital"):
+        portfolio_limit_vetoes("EUR/USD", Direction.LONG, D(1), make_state(equity="0"), {}, S)

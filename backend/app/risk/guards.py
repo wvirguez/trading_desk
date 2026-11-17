@@ -50,6 +50,81 @@ def _f_down(value: Decimal) -> str:
     return f"{value.quantize(Decimal('0.01'), rounding=ROUND_DOWN):.2f}"
 
 
+def daily_loss_limit_reached(state: PortfolioState, settings: Settings) -> bool:
+    """¿La pérdida realizada del día alcanza el límite? Exactamente en el límite, sí."""
+    limit_loss = -settings.max_daily_loss_pct / _HUNDRED * state.day_start_equity
+    return state.realized_pnl_today <= limit_loss
+
+
+def portfolio_limit_vetoes(
+    symbol: str,
+    direction: Direction,
+    new_risk: Decimal,
+    state: PortfolioState,
+    correlations: dict[tuple[str, str], float],
+    settings: Settings,
+) -> list[tuple[VetoReason, str]]:
+    """Guardas de cartera con un riesgo dado (D147): pérdida diaria, riesgo abierto y correlado.
+
+    No calcula tamaño: ``new_risk`` es el riesgo ya fijado del trade (el de la señal al
+    ejecutarla, D137; el del tamaño recién calculado al proponerla). Devuelve los vetos en el
+    orden fijo ``DAILY_LOSS_LIMIT``, ``OPEN_RISK_LIMIT``, ``CORRELATED_RISK_LIMIT``.
+    Capital <= 0 lanza ``ValueError`` (estado corrupto).
+    """
+    if state.equity <= 0 or state.day_start_equity <= 0:
+        raise ValueError("El capital del estado de cartera debe ser mayor que 0")
+
+    vetoes: list[tuple[VetoReason, str]] = []
+
+    # Pérdida diaria: exactamente en el límite veta.
+    if daily_loss_limit_reached(state, settings):
+        pct = state.realized_pnl_today / state.day_start_equity * _HUNDRED
+        shown = f"\u2212{_f(abs(pct))}" if pct < 0 else _f(pct)
+        vetoes.append(
+            (
+                VetoReason.DAILY_LOSS_LIMIT,
+                f"Pérdida diaria {shown} % alcanza el límite de {settings.max_daily_loss_pct} %",
+            )
+        )
+
+    new_pct = new_risk / state.equity * _HUNDRED
+
+    existing = sum((p.risk_amount for p in state.open_positions), Decimal(0))
+    existing_pct = existing / state.equity * _HUNDRED
+    if existing + new_risk > settings.max_open_risk_pct / _HUNDRED * state.equity:
+        vetoes.append(
+            (
+                VetoReason.OPEN_RISK_LIMIT,
+                f"Riesgo abierto {_f(existing_pct + new_pct)} % (existente {_f(existing_pct)} % + "
+                f"nuevo {_f(new_pct)} %) supera el máximo {settings.max_open_risk_pct} %",
+            )
+        )
+
+    threshold = float(settings.correlation_threshold)
+    correlated = Decimal(0)
+    for pos in state.open_positions:
+        if pos.direction is not direction:
+            continue
+        if pos.symbol == symbol:
+            rho = 1.0
+        else:
+            rho = pair_correlation(correlations, symbol, pos.symbol)
+            if math.isnan(rho):
+                rho = 1.0
+        if abs(rho) >= threshold:
+            correlated += pos.risk_amount
+    if correlated + new_risk > settings.max_correlated_risk_pct / _HUNDRED * state.equity:
+        corr_pct = correlated / state.equity * _HUNDRED
+        vetoes.append(
+            (
+                VetoReason.CORRELATED_RISK_LIMIT,
+                f"Riesgo correlacionado {_f(corr_pct + new_pct)} % (existente {_f(corr_pct)} % + "
+                f"nuevo {_f(new_pct)} %) supera el máximo {settings.max_correlated_risk_pct} %",
+            )
+        )
+    return vetoes
+
+
 def evaluate_trade(
     trade: ProposedTrade,
     state: PortfolioState,
@@ -87,48 +162,11 @@ def evaluate_trade(
                 f"R:R {_f_down(rr)} por debajo del mínimo {settings.min_rr}",
             )
 
-    # Pérdida diaria: exactamente en el límite veta.
-    limit_loss = -settings.max_daily_loss_pct / _HUNDRED * state.day_start_equity
-    if state.realized_pnl_today <= limit_loss:
-        pct = state.realized_pnl_today / state.day_start_equity * _HUNDRED
-        shown = f"\u2212{_f(abs(pct))}" if pct < 0 else _f(pct)
-        veto(
-            VetoReason.DAILY_LOSS_LIMIT,
-            f"Pérdida diaria {shown} % alcanza el límite de {settings.max_daily_loss_pct} %",
-        )
-
     new_risk = size.risk_amount if size is not None else Decimal(0)
-    new_pct = new_risk / state.equity * _HUNDRED
-
-    existing = sum((p.risk_amount for p in state.open_positions), Decimal(0))
-    existing_pct = existing / state.equity * _HUNDRED
-    if existing + new_risk > settings.max_open_risk_pct / _HUNDRED * state.equity:
-        veto(
-            VetoReason.OPEN_RISK_LIMIT,
-            f"Riesgo abierto {_f(existing_pct + new_pct)} % (existente {_f(existing_pct)} % + "
-            f"nuevo {_f(new_pct)} %) supera el máximo {settings.max_open_risk_pct} %",
-        )
-
-    threshold = float(settings.correlation_threshold)
-    correlated = Decimal(0)
-    for pos in state.open_positions:
-        if pos.direction is not trade.direction:
-            continue
-        if pos.symbol == trade.symbol:
-            rho = 1.0
-        else:
-            rho = pair_correlation(correlations, trade.symbol, pos.symbol)
-            if math.isnan(rho):
-                rho = 1.0
-        if abs(rho) >= threshold:
-            correlated += pos.risk_amount
-    if correlated + new_risk > settings.max_correlated_risk_pct / _HUNDRED * state.equity:
-        corr_pct = correlated / state.equity * _HUNDRED
-        veto(
-            VetoReason.CORRELATED_RISK_LIMIT,
-            f"Riesgo correlacionado {_f(corr_pct + new_pct)} % (existente {_f(corr_pct)} % + "
-            f"nuevo {_f(new_pct)} %) supera el máximo {settings.max_correlated_risk_pct} %",
-        )
+    for reason, message in portfolio_limit_vetoes(
+        trade.symbol, trade.direction, new_risk, state, correlations, settings
+    ):
+        veto(reason, message)
 
     if size is not None:
         if size.risk_pct > settings.risk_per_trade_pct:

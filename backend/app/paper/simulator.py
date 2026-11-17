@@ -155,3 +155,11 @@ def advance_order(order: OrderState, candles: Sequence[CandleSchema]) -> OrderAd
         filled_now=filled_now,
         closed_now=closed_at is not None,
     )
+
+
+def unrealized_pnl(
+    direction: Direction, fill_price: Decimal, mark_price: Decimal, units: Decimal
+) -> Decimal:
+    """PnL no realizado de una orden abierta: +-(mark - fill) * units (mismo signo que D134.6)."""
+    diff = mark_price - fill_price
+    return (diff if direction is Direction.LONG else -diff) * units
