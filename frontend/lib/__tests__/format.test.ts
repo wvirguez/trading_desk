@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPrice, formatQuantity } from "@/lib/format";
+import { formatAmount, formatPercent, formatPrice, formatQuantity } from "@/lib/format";
 
 describe("format", () => {
   describe("formatPrice", () => {
@@ -37,5 +37,30 @@ describe("format", () => {
       const result = formatQuantity("999999999999999999.999", "0.001");
       expect(result).toBe("999999999999999999.999");
     });
+  });
+});
+
+describe("formatPercent y formatAmount", () => {
+  it("formatea fracciones como porcentaje", () => {
+    expect(formatPercent(0.1234)).toBe("12.34 %");
+    expect(formatPercent(-0.05, 1)).toBe("-5.0 %");
+    expect(formatPercent(0)).toBe("0.00 %");
+  });
+
+  it("devuelve — para nulos", () => {
+    expect(formatPercent(null)).toBe("—");
+    expect(formatPercent(undefined)).toBe("—");
+    expect(formatPercent(Number.NaN)).toBe("—");
+    expect(formatAmount(null)).toBe("—");
+    expect(formatAmount(undefined)).toBe("—");
+  });
+
+  it("formatea importes sin notación científica", () => {
+    expect(formatAmount("10234.567")).toBe("10234.57");
+    expect(formatAmount("10000")).toBe("10000.00");
+    expect(formatAmount("1E+4")).toBe("10000.00");
+    expect(formatAmount(0.0000001, 2)).toBe("0.00");
+    expect(formatAmount(1.5)).toBe("1.50");
+    expect(formatAmount("123456789012345678901.239")).toBe("123456789012345678901.24");
   });
 });

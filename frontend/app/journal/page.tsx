@@ -1,5 +1,6 @@
 import Sidebar from "@/components/shell/sidebar";
 import Topbar from "@/components/shell/topbar";
+import JournalView from "@/components/journal/journal-view";
 
 export default function JournalPage() {
   return (
@@ -9,7 +10,7 @@ export default function JournalPage() {
         <Topbar />
         <main className="flex-1 p-6 overflow-auto">
           <h1 className="text-2xl font-semibold mb-6">Diario</h1>
-          <p className="text-zinc-400">Pendiente: paso 4.9</p>
+          <JournalView />
         </main>
       </div>
     </div>

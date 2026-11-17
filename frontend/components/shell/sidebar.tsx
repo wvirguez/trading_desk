@@ -12,9 +12,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: "/desk", label: "Desk" },
-  { path: "/backtest", label: "Backtest", badge: "Pendiente: paso 4.8" },
+  { path: "/backtest", label: "Backtest" },
   { path: "/agents", label: "Agentes" },
-  { path: "/journal", label: "Diario", badge: "Pendiente: paso 4.9" },
+  { path: "/journal", label: "Diario" },
 ];
 
 export default function Sidebar() {

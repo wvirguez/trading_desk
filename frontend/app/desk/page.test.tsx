@@ -60,6 +60,9 @@ vi.mock("@/components/chart/candle-chart", () => ({
 vi.mock("@/components/signals/signal-list", () => ({
   SignalList: () => <div data-testid="signal-list" />,
 }));
+vi.mock("@/components/blotter/blotter", () => ({
+  Blotter: () => <div data-testid="blotter" />,
+}));
 vi.mock("@/components/agents/analysis-form", () => ({
   default: () => <div data-testid="analysis-form" />,
 }));

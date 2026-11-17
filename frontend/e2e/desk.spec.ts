@@ -66,21 +66,30 @@ test.describe("terminal de lectura", () => {
     );
   });
 
-  test("la navegación llega a las páginas marcadoras", async ({ page }) => {
+  test("la navegación llega al backtest y al diario ya implementados", async ({ page }) => {
     await installRestMocks(page, { analyze: "success" });
     await installStreamMock(page);
     await page.goto("/agents");
 
     await page.getByRole("link", { name: "Backtest" }).click();
     await expect(page).toHaveURL(/\/backtest$/);
-    await expect(
-      page.getByRole("main").getByText("Pendiente: paso 4.8"),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ejecutar backtest" })).toBeVisible();
+    await expect(page.getByText("Pendiente: paso 4.8")).toHaveCount(0);
 
     await page.getByRole("link", { name: "Diario" }).click();
     await expect(page).toHaveURL(/\/journal$/);
+    await expect(page.getByRole("heading", { name: "Diario" })).toBeVisible();
+    await expect(page.getByText("Pendiente: paso 4.9")).toHaveCount(0);
+  });
+
+  test("el desk muestra el blotter vacío en su pestaña", async ({ page }) => {
+    await installRestMocks(page, { analyze: "success" });
+    await installStreamMock(page);
+    await page.goto("/desk");
+
+    await page.getByRole("tab", { name: "Blotter" }).click();
     await expect(
-      page.getByRole("main").getByText("Pendiente: paso 4.9"),
+      page.getByText("Sin órdenes simuladas. Ejecuta una señal aprobada."),
     ).toBeVisible();
   });
 });

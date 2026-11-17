@@ -43,3 +43,31 @@ export function formatQuantity(quantity: string, lotSize: string): string {
   const decimals = countDecimals(lotSize);
   return roundString(quantity, decimals);
 }
+
+const NULL_PLACEHOLDER = "—";
+const PLAIN_DECIMAL = /^-?\d+(\.\d+)?$/;
+
+/** Importe con decimales fijos y sin notación científica; `—` si es nulo. */
+export function formatAmount(
+  value: string | number | null | undefined,
+  decimals: number = 2,
+): string {
+  if (value === null || value === undefined || value === "") return NULL_PLACEHOLDER;
+  if (typeof value === "string" && PLAIN_DECIMAL.test(value)) {
+    return roundString(value, decimals);
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return NULL_PLACEHOLDER;
+  return numeric.toFixed(decimals);
+}
+
+/** Fracción del backend (0,05 = 5 %) mostrada como porcentaje; `—` si es nulo. */
+export function formatPercent(
+  value: number | null | undefined,
+  decimals: number = 2,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return NULL_PLACEHOLDER;
+  }
+  return `${(value * 100).toFixed(decimals)} %`;
+}

@@ -134,3 +134,20 @@ export function applyTick(
     },
   ];
 }
+
+type EquityPoint = components["schemas"]["EquityPoint"];
+
+export interface EquitySeriesItem {
+  time: number;
+  value: number;
+}
+
+export function equityToSeries(points: EquityPoint[]): EquitySeriesItem[] {
+  const byTime = new Map<number, number>();
+  for (const point of points) {
+    byTime.set(parseTsToSeconds(point.ts), Number(point.equity));
+  }
+  return Array.from(byTime.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([time, value]) => ({ time, value }));
+}

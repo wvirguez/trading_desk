@@ -41,17 +41,12 @@ describe("Sidebar", () => {
     expect(activeLabel).toHaveAttribute("aria-current", "page");
   });
 
-  it("muestra 'Pendiente: paso 4.8' en /backtest", () => {
-    usePathnameMock.mockReturnValue("/backtest");
-
-    render(<Sidebar />);
-    expect(screen.getByText("Pendiente: paso 4.8")).toBeInTheDocument();
-  });
-
-  it("muestra 'Pendiente: paso 4.9' en /journal", () => {
-    usePathnameMock.mockReturnValue("/journal");
-
-    render(<Sidebar />);
-    expect(screen.getByText("Pendiente: paso 4.9")).toBeInTheDocument();
+  it("ya no muestra ningún badge «Pendiente»", () => {
+    for (const route of routes) {
+      usePathnameMock.mockReturnValue(route.path);
+      const { unmount } = render(<Sidebar />);
+      expect(screen.queryByText(/Pendiente/)).not.toBeInTheDocument();
+      unmount();
+    }
   });
 });

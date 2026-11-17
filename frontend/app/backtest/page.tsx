@@ -1,5 +1,6 @@
 import Sidebar from "@/components/shell/sidebar";
 import Topbar from "@/components/shell/topbar";
+import BacktestView from "@/components/backtest/backtest-view";
 
 export default function BacktestPage() {
   return (
@@ -9,7 +10,7 @@ export default function BacktestPage() {
         <Topbar />
         <main className="flex-1 p-6 overflow-auto">
           <h1 className="text-2xl font-semibold mb-6">Backtest</h1>
-          <p className="text-zinc-400">Pendiente: paso 4.8</p>
+          <BacktestView />
         </main>
       </div>
     </div>

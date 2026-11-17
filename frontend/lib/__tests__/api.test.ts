@@ -83,3 +83,72 @@ describe("apiGet", () => {
     expect(data).toEqual({ result: "ok" });
   });
 });
+describe("apiPost", () => {
+  it("envía el cuerpo JSON con método POST", async () => {
+    const { apiPost } = await import("@/lib/api");
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+
+    const data = await apiPost("/test", { a: 1 });
+
+    expect(data).toEqual({ ok: true });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/api/v1/test",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ a: 1 }),
+        headers: expect.objectContaining({ "Content-Type": "application/json" }),
+      }),
+    );
+  });
+
+  it("sin cuerpo no envía body", async () => {
+    const { apiPost } = await import("@/lib/api");
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+    await apiPost("/test");
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeUndefined();
+  });
+
+  it("convierte 4xx y 5xx en ApiError con el detail exacto", async () => {
+    const { apiPost, ApiError } = await import("@/lib/api");
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ detail: "Señal ya ejecutada" }),
+    });
+    await expect(apiPost("/test")).rejects.toMatchObject({ status: 409, detail: "Señal ya ejecutada" });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => ({ detail: "Servicio no disponible" }),
+    });
+    const error = await apiPost("/test").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 503, detail: "Servicio no disponible" });
+  });
+
+  it("usa un mensaje genérico si el error no trae detail", async () => {
+    const { apiPost } = await import("@/lib/api");
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("no json");
+      },
+    });
+    await expect(apiPost("/test")).rejects.toMatchObject({ status: 500, detail: "Error HTTP 500" });
+  });
+
+  it("error de red lanza ApiError con mensaje en español", async () => {
+    const { apiPost } = await import("@/lib/api");
+    mockFetch.mockRejectedValue(new Error("Failed to fetch"));
+    await expect(apiPost("/test")).rejects.toMatchObject({
+      status: 0,
+      detail: "Error de red: no se pudo conectar con el servidor",
+    });
+  });
+});

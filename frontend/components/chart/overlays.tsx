@@ -132,5 +132,10 @@ export default function ChartOverlays({
     };
   }, [chart, candleSeries, fvgBoxes, showFvgs, signalOverlay]);
 
-  return null;
+  // Indicador accesible para los E2E: los niveles viven en un canvas y no son consultables por DOM.
+  const drawn =
+    chart && candleSeries && signalOverlay && showSignals
+      ? signalOverlay.levels.map((level) => level.label).join(",")
+      : "";
+  return <span data-testid="chart-price-lines" data-lines={drawn} className="sr-only" />;
 }

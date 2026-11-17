@@ -1,0 +1,35 @@
+{
+  "strategy_id": "44444444-4444-4444-8444-444444444444",
+  "config": {
+    "symbol": "BTC/USDT",
+    "timeframe": "1h",
+    "start": null,
+    "end": null,
+    "initial_capital": "10000",
+    "zscore_window": 50,
+    "entry_z": 2,
+    "exit_z": 0,
+    "allow_short": true
+  },
+  "n_bars": 480,
+  "n_trades": 12,
+  "total_return": 0.0842,
+  "sharpe": 1.35,
+  "max_drawdown": -0.0615,
+  "win_rate": 0.583,
+  "expectancy": 0.0071,
+  "final_equity": "10842.00",
+  "warnings": [],
+  "equity_curve": [
+    {"ts": "2026-11-01T00:00:00Z", "equity": "10000.00"},
+    {"ts": "2026-11-02T00:00:00Z", "equity": "10080.00"},
+    {"ts": "2026-11-03T00:00:00Z", "equity": "10040.00"},
+    {"ts": "2026-11-04T00:00:00Z", "equity": "10190.00"},
+    {"ts": "2026-11-05T00:00:00Z", "equity": "10310.00"},
+    {"ts": "2026-11-06T00:00:00Z", "equity": "10250.00"},
+    {"ts": "2026-11-07T00:00:00Z", "equity": "10480.00"},
+    {"ts": "2026-11-08T00:00:00Z", "equity": "10620.00"},
+    {"ts": "2026-11-09T00:00:00Z", "equity": "10560.00"},
+    {"ts": "2026-11-10T00:00:00Z", "equity": "10842.00"}
+  ]
+}

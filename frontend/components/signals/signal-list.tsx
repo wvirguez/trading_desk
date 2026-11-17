@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useExecuteSignal } from "@/hooks/use-execute-signal";
 import { formatPrice } from "@/lib/format";
 import type { components } from "@/types/api";
 
@@ -36,6 +38,18 @@ interface SignalCardProps {
 }
 
 function SignalCard({ signal, tickSize }: SignalCardProps) {
+  const execute = useExecuteSignal();
+  const [confirming, setConfirming] = useState(false);
+
+  const handleExecute = () => {
+    if (execute.isPending) return;
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    execute.mutate(signal.id, { onSettled: () => setConfirming(false) });
+  };
+
   const entry = formatPrice(signal.entry, tickSize);
   const stopLoss = formatPrice(signal.stop_loss, tickSize);
   const takeProfit = formatPrice(signal.take_profit, tickSize);
@@ -92,6 +106,28 @@ function SignalCard({ signal, tickSize }: SignalCardProps) {
           </>
         )}
       </div>
+
+      {signal.status === "APPROVED" && (
+        <div className="mb-3 space-y-2">
+          <button
+            type="button"
+            onClick={handleExecute}
+            disabled={execute.isPending}
+            className="rounded border border-zinc-600 px-3 py-1 text-sm text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {execute.isPending
+              ? "Ejecutando…"
+              : confirming
+                ? "Confirmar ejecución simulada"
+                : "Ejecutar (paper)"}
+          </button>
+          {execute.error && (
+            <p role="alert" className="text-sm text-red-400">
+              {execute.error.detail}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="pt-3 border-t border-zinc-700">
         <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">

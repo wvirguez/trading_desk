@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { candlesToSeries, applyTick, type CandleSeriesItem } from "../chart-data";
+import { candlesToSeries, applyTick, equityToSeries, type CandleSeriesItem } from "../chart-data";
 
 describe("chart-data", () => {
   const sampleCandles = [
@@ -223,5 +223,28 @@ describe("chart-data", () => {
       expect(result).toHaveLength(3);
       expect(result[2].gap).toBe(true);
     });
+  });
+});
+
+describe("equityToSeries", () => {
+  it("convierte ts a segundos UTC y equity a number", () => {
+    expect(equityToSeries([{ ts: "2024-01-01T00:00:00Z", equity: "10000.50" }])).toEqual([
+      { time: 1704067200, value: 10000.5 },
+    ]);
+  });
+
+  it("ordena por tiempo y descarta duplicados (gana el último)", () => {
+    const result = equityToSeries([
+      { ts: "2024-01-01T02:00:00Z", equity: "3" },
+      { ts: "2024-01-01T00:00:00Z", equity: "1" },
+      { ts: "2024-01-01T00:00:00Z", equity: "1.5" },
+      { ts: "2024-01-01T01:00:00Z", equity: "2" },
+    ]);
+    expect(result.map((p) => p.value)).toEqual([1.5, 2, 3]);
+    expect(result.map((p) => p.time)).toEqual([1704067200, 1704070800, 1704074400]);
+  });
+
+  it("devuelve [] sin puntos", () => {
+    expect(equityToSeries([])).toEqual([]);
   });
 });

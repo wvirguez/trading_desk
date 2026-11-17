@@ -5,6 +5,7 @@ import { useTerminalStore } from "@/store/terminal";
 import SymbolSelect from "@/components/chart/symbol-select";
 import TimeframeSelect from "@/components/chart/timeframe-select";
 import CandleChart from "@/components/chart/candle-chart";
+import { Blotter } from "@/components/blotter/blotter";
 import { SignalList } from "@/components/signals/signal-list";
 import { useActiveSignals } from "@/hooks/use-signals";
 import { useStructure } from "@/hooks/use-structure";
@@ -16,7 +17,7 @@ import AnalysisForm from "@/components/agents/analysis-form";
 import AnalysisFeed from "@/components/agents/analysis-feed";
 import { useQueryClient } from "@tanstack/react-query";
 
-type TabValue = "signals" | "analysis";
+type TabValue = "signals" | "blotter";
 
 export default function DeskPage() {
   const { symbol, timeframe } = useTerminalStore();
@@ -29,6 +30,9 @@ export default function DeskPage() {
   const instrument = useTerminalStore.getState().instruments?.find((i) => i.symbol === symbol);
   const tickSize = instrument?.tick_size ?? "0.01";
   const lotSize = instrument?.lot_size ?? "0.00001";
+  const instruments = useTerminalStore.getState().instruments ?? [];
+  const tickSizes = Object.fromEntries(instruments.map((i) => [i.symbol, i.tick_size]));
+  const lotSizes = Object.fromEntries(instruments.map((i) => [i.symbol, i.lot_size]));
 
   useEffect(() => {
     if (analysis.state.status === "completed") {
@@ -50,51 +54,46 @@ export default function DeskPage() {
           </div>
         </div>
         <div className="flex-1 flex overflow-hidden">
-          <main className="flex-1 p-6 overflow-auto min-w-0">
-            <CandleChart className="w-full" />
-          </main>
-          <aside className="w-96 border-l border-zinc-800 bg-zinc-950/50 flex flex-col">
-            <Tabs
-              value={activeTab}
-              onValueChange={(v: string) => setActiveTab(v as TabValue)}
-              className="flex-1 flex flex-col"
-            >
-              <TabsList className="border-b border-zinc-800 bg-zinc-950/50">
-                <TabsTrigger value="signals">Señales</TabsTrigger>
-                <TabsTrigger value="analysis">Análisis</TabsTrigger>
-              </TabsList>
-              <TabsContent value="signals" className="flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-zinc-800">
-                  <h2 className="text-lg font-semibold">Señales activas</h2>
-                </div>
-                <ScrollArea className="flex-1 p-4">
-                  <SignalList
-                    signals={signals ?? []}
-                    structure={structure ?? { events: [], fvgs: [], swings: [] }}
-                    tickSize={tickSize}
-                    lotSize={lotSize}
-                  />
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent
-                value="analysis"
-                className="flex-1 flex flex-col overflow-hidden min-h-0"
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            <main className="flex-1 p-6 overflow-auto min-h-0">
+              <CandleChart className="w-full" />
+            </main>
+            <section className="h-80 border-t border-zinc-800 bg-zinc-950/50 flex flex-col">
+              <Tabs
+                value={activeTab}
+                onValueChange={(v: string) => setActiveTab(v as TabValue)}
+                className="flex-1 flex flex-col min-h-0"
               >
-                <div className="flex flex-col flex-1 min-h-0">
-                  <div className="p-4 border-b border-zinc-800 flex-shrink-0">
-                    <h2 className="text-lg font-semibold">Análisis de agentes</h2>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 p-4">
-                    <div className="lg:col-span-1 min-h-0">
-                      <AnalysisForm analysis={analysis} />
-                    </div>
-                    <div className="lg:col-span-2 min-h-0">
-                      <AnalysisFeed analysis={analysis} />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+                <TabsList className="border-b border-zinc-800 bg-zinc-950/50">
+                  <TabsTrigger value="signals">Señales</TabsTrigger>
+                  <TabsTrigger value="blotter">Blotter</TabsTrigger>
+                </TabsList>
+                <TabsContent value="signals" className="flex-1 min-h-0 overflow-hidden">
+                  <ScrollArea className="h-full p-4">
+                    <SignalList
+                      signals={signals ?? []}
+                      structure={structure ?? { events: [], fvgs: [], swings: [] }}
+                      tickSize={tickSize}
+                      lotSize={lotSize}
+                    />
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="blotter" className="flex-1 min-h-0 overflow-hidden">
+                  <ScrollArea className="h-full p-4">
+                    <Blotter tickSizes={tickSizes} lotSizes={lotSizes} />
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </section>
+          </div>
+          <aside className="w-96 border-l border-zinc-800 bg-zinc-950/50 flex flex-col min-h-0">
+            <div className="p-4 border-b border-zinc-800 flex-shrink-0">
+              <h2 className="text-lg font-semibold">Análisis de agentes</h2>
+            </div>
+            <div className="flex flex-col gap-4 flex-1 min-h-0 p-4">
+              <AnalysisForm analysis={analysis} />
+              <AnalysisFeed analysis={analysis} />
+            </div>
           </aside>
         </div>
       </div>
