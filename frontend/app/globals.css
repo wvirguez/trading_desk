@@ -8,6 +8,21 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-border: oklch(0.274 0.006 286);
+  --color-input: oklch(0.274 0.006 286);
+  --color-ring: oklch(0.552 0.016 286);
+  --color-primary: oklch(0.985 0 0);
+  --color-primary-foreground: oklch(0.21 0.006 286);
+  --color-popover: oklch(0.21 0.006 286);
+  --color-popover-foreground: oklch(0.985 0 0);
+  --color-accent: oklch(0.274 0.006 286);
+  --color-accent-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.274 0.006 286);
+  --color-muted-foreground: oklch(0.705 0.015 286);
+  --color-destructive: oklch(0.577 0.245 27);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-secondary: oklch(0.274 0.006 286);
+  --color-secondary-foreground: oklch(0.985 0 0);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
