@@ -25,7 +25,7 @@ Regla de cada grupo: **esquema → tests → implementación**, y termina en un 
 - [x] 3.3. Tests `db` de repositorios (`tests/repositories/test_paper_orders_repo.py`): `insert_order` copia niveles y tamaño de la señal; una segunda inserción para la misma señal lanza el error de unicidad; `list_open_orders` devuelve solo `PENDING_FILL`/`OPEN` con símbolo e instrumento; `list_orders(status, limit)` ordena por `executed_at` descendente; `sum_realized_pnl(session)` y `sum_realized_pnl_between(session, start, end)` usan `Decimal`; `update_order_state` solo cambia las columnas de estado (nunca `signal_entry`, `units`, `stop_loss`, `take_profit`, `risk_amount`).
 - [x] 3.4. `app/repositories/paper_orders.py` (inserción, listados, sumas, actualización de estado, conversión a esquema) y, en `app/repositories/trade_signals.py`, `get_signal_for_update(session, signal_id)` (bloqueo `FOR UPDATE`), `mark_executed(session, signal_id)` y `list_for_journal(session, symbol, limit)` (todos los estados con `analysis_id`, con su orden si existe, por `LEFT JOIN`). Reescribir `list_executed` para que lea `paper_orders` (D138).
 - [x] 3.5. Tests actualizados de `list_executed` (ahora desde `paper_orders`) y de `list_for_journal` (incluye `REJECTED`, `APPROVED` sin orden y `EXECUTED` con orden; excluye filas sin `analysis_id`; filtra por símbolo).
-- [ ] 3.6. Commit: `Feat: modelo paper_orders, migracion 0010 y repositorios`.
+- [x] 3.6. Commit: `Feat: modelo paper_orders, migracion 0010 y repositorios`.
 
 ## 4. Lógica de dominio
 
@@ -42,7 +42,7 @@ Regla de cada grupo: **esquema → tests → implementación**, y termina en un 
 - [x] 4B.2. Implementar el cambio en `app/services/portfolio.py` (D138) y actualizar `tests/services/test_analysis_service.py` (el aviso desaparece; un análisis sin órdenes se comporta igual que antes). Un análisis llama primero a `refresh_orders` (D135).
 - [x] 4B.3. Tests puros de `app/paper/journal.py` (`tests/paper/test_journal.py`): `build_journal(rows)` calcula `n_*`, `win_rate`, `total_pnl`, `expectancy_r`, `avg_rr_emitted` y `avg_r_realized` con valores calculados a mano; con 0 cerradas los campos son `None`; con < 30 cerradas hay aviso de muestra pequeña y con ≥ 30 no; `outcome` mapea `CLOSED_TP → WIN`, `CLOSED_SL → LOSS`, rechazadas y sin orden → `NOT_EXECUTED`; el resultado es idéntico con las mismas entradas (determinismo).
 - [x] 4B.4. `app/paper/journal.py`: `build_journal` en Python puro (principio 2).
-- [ ] 4B.5. Commit: `Feat: estado de cartera real y resumen del journal`.
+- [x] 4B.5. Commit: `Feat: estado de cartera real y resumen del journal`.
 
 ## 5. Servicios y endpoints FastAPI
 
@@ -50,14 +50,14 @@ Regla de cada grupo: **esquema → tests → implementación**, y termina en un 
 - [x] 5.2. Tests de la API (`tests/api/test_paper.py`, `tests/api/test_journal.py`, `@pytest.mark.db`): `POST /signals/{id}/execute` → 201 con `OrderReceiptSchema` y `simulated = true`; 404 `Señal desconocida: <id>`; 409 por estado y por veto (mensajes en español con el dato); 409 en la segunda ejecución; 422 con UUID inválido; `POST /paper/refresh` → 200 con contadores; `GET /paper/blotter` → 200, filtra por `status`, no modifica datos (dos `GET` seguidos idénticos y sin escrituras) y rechaza `limit` fuera de 1–500; `GET /journal` → 200, filtra por `symbol`, 404 con símbolo desconocido; `GET /signals/active` ya no devuelve la señal tras ejecutarla; decimales como cadena.
 - [x] 5.3. `app/services/paper.py` (`execute_signal`, `refresh_orders`, `get_blotter`, `get_journal`; errores de dominio) y los routers: `POST /signals/{signal_id}/execute` en `app/api/v1/signals.py`, nuevos `app/api/v1/paper.py` (`/paper/refresh`, `/paper/blotter`) y `app/api/v1/journal.py` (`/journal`), registrados en `router.py`. Errores de dominio → `HTTPException` con `detail` en español (D146). El «día» es UTC.
 - [x] 5.4. Registrar como decisión de implementación (D147 en adelante) el mecanismo elegido para reutilizar las guardas sin recalcular el tamaño (D137).
-- [ ] 5.5. Commit: `Feat: ejecucion simulada, blotter y journal (API)`.
+- [x] 5.5. Commit: `Feat: ejecucion simulada, blotter y journal (API)`.
 
 ## 6. Tipos TS generados
 
 - [x] 6.1. `uv run python scripts/export_openapi.py` → `backend/openapi.json` actualizado.
 - [x] 6.2. En `frontend/`: `npm run gen:api` → `frontend/types/api.ts`. Comprobar que existen `OrderReceiptSchema`, `PaperOrderSchema`, `BlotterSchema`, `PaperRefreshResult`, `JournalSchema`, `JournalEntrySchema`, `JournalSummarySchema`, `OrderStatus` y las rutas `execute`, `paper/refresh`, `paper/blotter` y `journal`. No se escribe ningún tipo de API a mano.
 - [x] 6.3. `npm run typecheck` y `npm run build` pasan; sin diff al regenerar por segunda vez.
-- [ ] 6.4. Commit: `Ud: contrato OpenAPI y tipos TS de paper trading y journal`.
+- [x] 6.4. Commit: `Ud: contrato OpenAPI y tipos TS de paper trading y journal`.
 
 ## 7. UI de Next.js
 
@@ -68,7 +68,7 @@ Cada subgrupo es un commit independiente. En todos: leer antes la guía de Next 
 - [x] 7A.1. Tests de hooks con `fetch` simulado: `useExecuteSignal` (`POST /api/v1/signals/{id}/execute`; éxito invalida `signals/active` y `paper/blotter`; 404/409/422 devuelven el `detail` exacto del backend como `ApiError`); `useBlotter(status?)` (`GET /api/v1/paper/blotter`); `useRefreshOrders` (`POST /paper/refresh`, invalida el blotter). Añadir `apiPost` a `lib/api.ts` si no existe (con tests: cuerpo, errores 4xx/5xx con `detail`, error de red en español).
 - [x] 7A.2. Tests de componentes: `SignalList` muestra el botón «Ejecutar (paper)» solo para señales `APPROVED`; el primer clic cambia a «Confirmar ejecución simulada» y el segundo ejecuta (no ejecuta con un solo clic); mientras corre, el botón se deshabilita (sin doble envío); un 409 muestra el `detail` tal cual (incluido el veto con motivos) y la señal sigue visible; `Blotter` muestra la tabla (símbolo, dirección, unidades, estado, fill, salida, PnL, R, con formato de `tick_size`), el resumen (equity, PnL del día, PnL no realizado, riesgo abierto), el aviso «Paper trading simulado: sin costes ni slippage» y «PnL no realizado = vs. último cierre ingerido (no es tiempo real)», `PENDING_FILL` con su explicación, el aviso de límite diario alcanzado (`daily_loss_limit_reached`), el estado vacío («Sin órdenes simuladas. Ejecuta una señal aprobada.») y «—» para valores nulos; el botón «Actualizar» llama a `POST /paper/refresh`; error 5xx visible con reintento.
 - [x] 7A.3. Implementar `hooks/{use-execute-signal,use-blotter,use-refresh-orders}.ts`, `components/blotter/{blotter,orders-table,account-summary}.tsx`, el botón en `components/signals/signal-list.tsx`, y el panel inferior de `/desk` con pestañas «Señales» y «Blotter» (D140; componente `tabs` ya copiado). Tabla con `<table>` y Tailwind (sin paquetes nuevos).
-- [ ] 7A.4. `lint`, `typecheck`, `test`, `build` en verde. Commit: `Feat: ejecucion en paper y blotter en el terminal`.
+- [x] 7A.4. `lint`, `typecheck`, `test`, `build` en verde. Commit: `Feat: ejecucion en paper y blotter en el terminal`.
 
 ### 7B. Vista de backtest (4.8)
 
