@@ -547,6 +547,67 @@
         "title": "Bias",
         "type": "string"
       },
+      "BlotterSchema": {
+        "additionalProperties": false,
+        "description": "Estado de cartera simulada y sus órdenes. Calculado en el backend (principio 2).",
+        "properties": {
+          "daily_loss_limit_reached": {
+            "title": "Daily Loss Limit Reached",
+            "type": "boolean"
+          },
+          "day_start_equity": {
+            "title": "Day Start Equity",
+            "type": "string"
+          },
+          "equity": {
+            "title": "Equity",
+            "type": "string"
+          },
+          "open_risk": {
+            "title": "Open Risk",
+            "type": "string"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/PaperOrderSchema"
+            },
+            "title": "Orders",
+            "type": "array"
+          },
+          "realized_pnl_today": {
+            "title": "Realized Pnl Today",
+            "type": "string"
+          },
+          "realized_pnl_total": {
+            "title": "Realized Pnl Total",
+            "type": "string"
+          },
+          "unrealized_pnl_total": {
+            "title": "Unrealized Pnl Total",
+            "type": "string"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "equity",
+          "day_start_equity",
+          "realized_pnl_today",
+          "realized_pnl_total",
+          "unrealized_pnl_total",
+          "open_risk",
+          "daily_loss_limit_reached",
+          "orders"
+        ],
+        "title": "BlotterSchema",
+        "type": "object"
+      },
       "CandleSchema": {
         "properties": {
           "close": {
@@ -822,6 +883,305 @@
         "title": "InstrumentSchema",
         "type": "object"
       },
+      "JournalEntrySchema": {
+        "additionalProperties": false,
+        "description": "Una señal con su resultado simulado.\n\nInvariantes:\n- NOT_EXECUTED: sin `order_id` ni datos de orden.\n- PENDING_FILL, OPEN, WIN y LOSS: `order_id` obligatorio.\n- PENDING_FILL: sin `fill_price`.\n- Sin cerrar (todo salvo WIN/LOSS): sin `exit_price`, `realized_pnl`, `r_multiple` ni\n  `closed_at`.\n- WIN/LOSS: `fill_price`, `exit_price`, `realized_pnl` y `closed_at` obligatorios.",
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "exit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Price"
+          },
+          "fill_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill Price"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/JournalOutcome"
+          },
+          "r_multiple": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "R Multiple"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "realized_pnl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realized Pnl"
+          },
+          "regime": {
+            "$ref": "#/components/schemas/RegimeLabel"
+          },
+          "risk_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Amount"
+          },
+          "rr": {
+            "title": "Rr",
+            "type": "string"
+          },
+          "signal_id": {
+            "format": "uuid",
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "signal_status": {
+            "$ref": "#/components/schemas/SignalStatus"
+          },
+          "stop_loss": {
+            "title": "Stop Loss",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "take_profit": {
+            "title": "Take Profit",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "veto_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/VetoReason"
+            },
+            "title": "Veto Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "signal_id",
+          "analysis_id",
+          "created_at",
+          "symbol",
+          "timeframe",
+          "direction",
+          "signal_status",
+          "regime",
+          "entry",
+          "stop_loss",
+          "take_profit",
+          "rr",
+          "veto_reasons",
+          "rationale",
+          "outcome"
+        ],
+        "title": "JournalEntrySchema",
+        "type": "object"
+      },
+      "JournalOutcome": {
+        "enum": [
+          "NOT_EXECUTED",
+          "PENDING_FILL",
+          "OPEN",
+          "WIN",
+          "LOSS"
+        ],
+        "title": "JournalOutcome",
+        "type": "string"
+      },
+      "JournalSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/JournalEntrySchema"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/JournalSummarySchema"
+          }
+        },
+        "required": [
+          "summary",
+          "entries"
+        ],
+        "title": "JournalSchema",
+        "type": "object"
+      },
+      "JournalSummarySchema": {
+        "additionalProperties": false,
+        "description": "Resumen estadístico. Las métricas son None sin operaciones cerradas (no 0, no NaN).",
+        "properties": {
+          "avg_r_realized": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg R Realized"
+          },
+          "avg_rr_emitted": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rr Emitted"
+          },
+          "expectancy_r": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expectancy R"
+          },
+          "n_approved": {
+            "title": "N Approved",
+            "type": "integer"
+          },
+          "n_closed": {
+            "title": "N Closed",
+            "type": "integer"
+          },
+          "n_executed": {
+            "title": "N Executed",
+            "type": "integer"
+          },
+          "n_losses": {
+            "title": "N Losses",
+            "type": "integer"
+          },
+          "n_rejected": {
+            "title": "N Rejected",
+            "type": "integer"
+          },
+          "n_signals": {
+            "title": "N Signals",
+            "type": "integer"
+          },
+          "n_wins": {
+            "title": "N Wins",
+            "type": "integer"
+          },
+          "total_pnl": {
+            "title": "Total Pnl",
+            "type": "string"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "win_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Win Rate"
+          }
+        },
+        "required": [
+          "n_signals",
+          "n_approved",
+          "n_rejected",
+          "n_executed",
+          "n_closed",
+          "n_wins",
+          "n_losses",
+          "total_pnl"
+        ],
+        "title": "JournalSummarySchema",
+        "type": "object"
+      },
       "JsonValue": {},
       "KellyResult": {
         "properties": {
@@ -937,6 +1297,341 @@
           "fvgs"
         ],
         "title": "MarketStructureResult",
+        "type": "object"
+      },
+      "OrderReceiptSchema": {
+        "additionalProperties": false,
+        "description": "Recibo de una orden simulada.\n\nInvariantes:\n- PENDING_FILL: sin `fill_price` ni `filled_at`.\n- OPEN y CLOSED_*: `fill_price` y `filled_at` obligatorios.\n- `simulated` es siempre True: no existe ejecución real.",
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "executed_at": {
+            "format": "date-time",
+            "title": "Executed At",
+            "type": "string"
+          },
+          "fill_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill Price"
+          },
+          "filled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filled At"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "risk_amount": {
+            "title": "Risk Amount",
+            "type": "string"
+          },
+          "signal_entry": {
+            "title": "Signal Entry",
+            "type": "string"
+          },
+          "signal_id": {
+            "format": "uuid",
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "simulated": {
+            "const": true,
+            "default": true,
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "stop_loss": {
+            "title": "Stop Loss",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "take_profit": {
+            "title": "Take Profit",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "units": {
+            "title": "Units",
+            "type": "string"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_id",
+          "signal_id",
+          "symbol",
+          "timeframe",
+          "direction",
+          "units",
+          "signal_entry",
+          "stop_loss",
+          "take_profit",
+          "risk_amount",
+          "status",
+          "executed_at"
+        ],
+        "title": "OrderReceiptSchema",
+        "type": "object"
+      },
+      "OrderStatus": {
+        "enum": [
+          "PENDING_FILL",
+          "OPEN",
+          "CLOSED_TP",
+          "CLOSED_SL"
+        ],
+        "title": "OrderStatus",
+        "type": "string"
+      },
+      "PaperOrderSchema": {
+        "additionalProperties": false,
+        "description": "Orden con su evolución: salida, PnL realizado (cerradas) y no realizado (OPEN).\n\nInvariantes adicionales:\n- CLOSED_*: `exit_price`, `closed_at` y `realized_pnl` obligatorios.\n- No cerrada: sin `exit_price`, `closed_at` ni `realized_pnl`.\n- `mark_price` y `unrealized_pnl` solo en OPEN.\n- `pnl` es el realizado (cerrada), el no realizado (OPEN) o None (PENDING_FILL);\n  `r_multiple` (`pnl / risk_amount`) solo existe si hay `pnl`.",
+        "properties": {
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "executed_at": {
+            "format": "date-time",
+            "title": "Executed At",
+            "type": "string"
+          },
+          "exit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Price"
+          },
+          "fill_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill Price"
+          },
+          "filled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filled At"
+          },
+          "mark_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mark Price"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "pnl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pnl"
+          },
+          "r_multiple": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "R Multiple"
+          },
+          "realized_pnl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realized Pnl"
+          },
+          "risk_amount": {
+            "title": "Risk Amount",
+            "type": "string"
+          },
+          "signal_entry": {
+            "title": "Signal Entry",
+            "type": "string"
+          },
+          "signal_id": {
+            "format": "uuid",
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "simulated": {
+            "const": true,
+            "default": true,
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "stop_loss": {
+            "title": "Stop Loss",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "take_profit": {
+            "title": "Take Profit",
+            "type": "string"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "units": {
+            "title": "Units",
+            "type": "string"
+          },
+          "unrealized_pnl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unrealized Pnl"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_id",
+          "signal_id",
+          "symbol",
+          "timeframe",
+          "direction",
+          "units",
+          "signal_entry",
+          "stop_loss",
+          "take_profit",
+          "risk_amount",
+          "status",
+          "executed_at"
+        ],
+        "title": "PaperOrderSchema",
+        "type": "object"
+      },
+      "PaperRefreshResult": {
+        "additionalProperties": false,
+        "description": "Resultado de `POST /paper/refresh`.",
+        "properties": {
+          "orders_checked": {
+            "title": "Orders Checked",
+            "type": "integer"
+          },
+          "orders_closed": {
+            "title": "Orders Closed",
+            "type": "integer"
+          },
+          "orders_filled": {
+            "title": "Orders Filled",
+            "type": "integer"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "orders_checked",
+          "orders_filled",
+          "orders_closed"
+        ],
+        "title": "PaperRefreshResult",
         "type": "object"
       },
       "Playbook": {
@@ -1811,6 +2506,75 @@
         ]
       }
     },
+    "/api/v1/journal": {
+      "get": {
+        "description": "Entradas (recientes primero) y resumen estadístico. Solo lectura.",
+        "operationId": "get_journal_api_v1_journal_get",
+        "parameters": [
+          {
+            "description": "Filtra por símbolo",
+            "in": "query",
+            "name": "symbol",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por símbolo",
+              "title": "Symbol"
+            }
+          },
+          {
+            "description": "Máximo de señales",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "Máximo de señales",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalSchema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Instrumento desconocido"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Journal",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/market/instruments": {
       "get": {
         "description": "Lista todos los instrumentos ordenados por id.",
@@ -1993,6 +2757,87 @@
         ]
       }
     },
+    "/api/v1/paper/blotter": {
+      "get": {
+        "description": "Cartera simulada y órdenes con PnL. Solo lectura: no avanza órdenes.",
+        "operationId": "get_blotter_api_v1_paper_blotter_get",
+        "parameters": [
+          {
+            "description": "Filtra por estado de la orden",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por estado de la orden",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Máximo de órdenes",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "Máximo de órdenes",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlotterSchema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Parámetros de consulta inválidos"
+          }
+        },
+        "summary": "Get Blotter",
+        "tags": [
+          "paper"
+        ]
+      }
+    },
+    "/api/v1/paper/refresh": {
+      "post": {
+        "description": "Avanza las órdenes `PENDING_FILL`/`OPEN` con las velas ya ingeridas (idempotente).",
+        "operationId": "post_refresh_api_v1_paper_refresh_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperRefreshResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Post Refresh",
+        "tags": [
+          "paper"
+        ]
+      }
+    },
     "/api/v1/quant/backtest": {
       "post": {
         "operationId": "post_backtest_api_v1_quant_backtest_post",
@@ -2095,6 +2940,49 @@
           }
         },
         "summary": "Get Active Signals",
+        "tags": [
+          "signals"
+        ]
+      }
+    },
+    "/api/v1/signals/{signal_id}/execute": {
+      "post": {
+        "description": "Ejecuta una señal `APPROVED` en paper trading (simulado, sin costes ni slippage).\n\nIdempotente: una segunda llamada devuelve 409 sin crear otra orden (D136).",
+        "operationId": "execute_signal_api_v1_signals__signal_id__execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "signal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Signal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptSchema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Señal desconocida"
+          },
+          "409": {
+            "description": "Señal no aprobada, ya ejecutada o vetada por las guardas de cartera"
+          },
+          "422": {
+            "description": "Identificador de señal inválido"
+          }
+        },
+        "summary": "Execute Signal",
         "tags": [
           "signals"
         ]

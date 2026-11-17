@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Journal
+         * @description Entradas (recientes primero) y resumen estadístico. Solo lectura.
+         */
+        get: operations["get_journal_api_v1_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/instruments": {
         parameters: {
             query?: never;
@@ -100,6 +120,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/paper/blotter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Blotter
+         * @description Cartera simulada y órdenes con PnL. Solo lectura: no avanza órdenes.
+         */
+        get: operations["get_blotter_api_v1_paper_blotter_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/paper/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Refresh
+         * @description Avanza las órdenes `PENDING_FILL`/`OPEN` con las velas ya ingeridas (idempotente).
+         */
+        post: operations["post_refresh_api_v1_paper_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quant/backtest": {
         parameters: {
             query?: never;
@@ -131,6 +191,28 @@ export interface paths {
         get: operations["get_active_signals_api_v1_signals_active_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signals/{signal_id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Signal
+         * @description Ejecuta una señal `APPROVED` en paper trading (simulado, sin costes ni slippage).
+         *
+         *     Idempotente: una segunda llamada devuelve 409 sin crear otra orden (D136).
+         */
+        post: operations["execute_signal_api_v1_signals__signal_id__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -382,6 +464,33 @@ export interface components {
          * @enum {string}
          */
         Bias: "BULLISH" | "BEARISH" | "NEUTRAL";
+        /**
+         * BlotterSchema
+         * @description Estado de cartera simulada y sus órdenes. Calculado en el backend (principio 2).
+         */
+        BlotterSchema: {
+            /** Daily Loss Limit Reached */
+            daily_loss_limit_reached: boolean;
+            /** Day Start Equity */
+            day_start_equity: string;
+            /** Equity */
+            equity: string;
+            /** Open Risk */
+            open_risk: string;
+            /** Orders */
+            orders: components["schemas"]["PaperOrderSchema"][];
+            /** Realized Pnl Today */
+            realized_pnl_today: string;
+            /** Realized Pnl Total */
+            realized_pnl_total: string;
+            /** Unrealized Pnl Total */
+            unrealized_pnl_total: string;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+        };
         /** CandleSchema */
         CandleSchema: {
             /** Close */
@@ -493,6 +602,114 @@ export interface components {
             /** Tick Size */
             tick_size: string;
         };
+        /**
+         * JournalEntrySchema
+         * @description Una señal con su resultado simulado.
+         *
+         *     Invariantes:
+         *     - NOT_EXECUTED: sin `order_id` ni datos de orden.
+         *     - PENDING_FILL, OPEN, WIN y LOSS: `order_id` obligatorio.
+         *     - PENDING_FILL: sin `fill_price`.
+         *     - Sin cerrar (todo salvo WIN/LOSS): sin `exit_price`, `realized_pnl`, `r_multiple` ni
+         *       `closed_at`.
+         *     - WIN/LOSS: `fill_price`, `exit_price`, `realized_pnl` y `closed_at` obligatorios.
+         */
+        JournalEntrySchema: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /** Closed At */
+            closed_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            direction: components["schemas"]["Direction"];
+            /** Entry */
+            entry: string;
+            /** Exit Price */
+            exit_price?: string | null;
+            /** Fill Price */
+            fill_price?: string | null;
+            /** Order Id */
+            order_id?: string | null;
+            outcome: components["schemas"]["JournalOutcome"];
+            /** R Multiple */
+            r_multiple?: string | null;
+            /** Rationale */
+            rationale: string;
+            /** Realized Pnl */
+            realized_pnl?: string | null;
+            regime: components["schemas"]["RegimeLabel"];
+            /** Risk Amount */
+            risk_amount?: string | null;
+            /** Rr */
+            rr: string;
+            /**
+             * Signal Id
+             * Format: uuid
+             */
+            signal_id: string;
+            signal_status: components["schemas"]["SignalStatus"];
+            /** Stop Loss */
+            stop_loss: string;
+            /** Symbol */
+            symbol: string;
+            /** Take Profit */
+            take_profit: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /** Veto Reasons */
+            veto_reasons: components["schemas"]["VetoReason"][];
+        };
+        /**
+         * JournalOutcome
+         * @enum {string}
+         */
+        JournalOutcome: "NOT_EXECUTED" | "PENDING_FILL" | "OPEN" | "WIN" | "LOSS";
+        /** JournalSchema */
+        JournalSchema: {
+            /** Entries */
+            entries: components["schemas"]["JournalEntrySchema"][];
+            summary: components["schemas"]["JournalSummarySchema"];
+        };
+        /**
+         * JournalSummarySchema
+         * @description Resumen estadístico. Las métricas son None sin operaciones cerradas (no 0, no NaN).
+         */
+        JournalSummarySchema: {
+            /** Avg R Realized */
+            avg_r_realized?: number | null;
+            /** Avg Rr Emitted */
+            avg_rr_emitted?: number | null;
+            /** Expectancy R */
+            expectancy_r?: number | null;
+            /** N Approved */
+            n_approved: number;
+            /** N Closed */
+            n_closed: number;
+            /** N Executed */
+            n_executed: number;
+            /** N Losses */
+            n_losses: number;
+            /** N Rejected */
+            n_rejected: number;
+            /** N Signals */
+            n_signals: number;
+            /** N Wins */
+            n_wins: number;
+            /** Total Pnl */
+            total_pnl: string;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+            /** Win Rate */
+            win_rate?: number | null;
+        };
         JsonValue: unknown;
         /** KellyResult */
         KellyResult: {
@@ -529,6 +746,156 @@ export interface components {
             fvgs: components["schemas"]["FairValueGap"][];
             /** Swings */
             swings: components["schemas"]["SwingPoint"][];
+        };
+        /**
+         * OrderReceiptSchema
+         * @description Recibo de una orden simulada.
+         *
+         *     Invariantes:
+         *     - PENDING_FILL: sin `fill_price` ni `filled_at`.
+         *     - OPEN y CLOSED_*: `fill_price` y `filled_at` obligatorios.
+         *     - `simulated` es siempre True: no existe ejecución real.
+         */
+        OrderReceiptSchema: {
+            direction: components["schemas"]["Direction"];
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at: string;
+            /** Fill Price */
+            fill_price?: string | null;
+            /** Filled At */
+            filled_at?: string | null;
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Risk Amount */
+            risk_amount: string;
+            /** Signal Entry */
+            signal_entry: string;
+            /**
+             * Signal Id
+             * Format: uuid
+             */
+            signal_id: string;
+            /**
+             * Simulated
+             * @default true
+             * @constant
+             */
+            simulated: true;
+            status: components["schemas"]["OrderStatus"];
+            /** Stop Loss */
+            stop_loss: string;
+            /** Symbol */
+            symbol: string;
+            /** Take Profit */
+            take_profit: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /** Units */
+            units: string;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+        };
+        /**
+         * OrderStatus
+         * @enum {string}
+         */
+        OrderStatus: "PENDING_FILL" | "OPEN" | "CLOSED_TP" | "CLOSED_SL";
+        /**
+         * PaperOrderSchema
+         * @description Orden con su evolución: salida, PnL realizado (cerradas) y no realizado (OPEN).
+         *
+         *     Invariantes adicionales:
+         *     - CLOSED_*: `exit_price`, `closed_at` y `realized_pnl` obligatorios.
+         *     - No cerrada: sin `exit_price`, `closed_at` ni `realized_pnl`.
+         *     - `mark_price` y `unrealized_pnl` solo en OPEN.
+         *     - `pnl` es el realizado (cerrada), el no realizado (OPEN) o None (PENDING_FILL);
+         *       `r_multiple` (`pnl / risk_amount`) solo existe si hay `pnl`.
+         */
+        PaperOrderSchema: {
+            /** Closed At */
+            closed_at?: string | null;
+            direction: components["schemas"]["Direction"];
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at: string;
+            /** Exit Price */
+            exit_price?: string | null;
+            /** Fill Price */
+            fill_price?: string | null;
+            /** Filled At */
+            filled_at?: string | null;
+            /** Mark Price */
+            mark_price?: string | null;
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Pnl */
+            pnl?: string | null;
+            /** R Multiple */
+            r_multiple?: string | null;
+            /** Realized Pnl */
+            realized_pnl?: string | null;
+            /** Risk Amount */
+            risk_amount: string;
+            /** Signal Entry */
+            signal_entry: string;
+            /**
+             * Signal Id
+             * Format: uuid
+             */
+            signal_id: string;
+            /**
+             * Simulated
+             * @default true
+             * @constant
+             */
+            simulated: true;
+            status: components["schemas"]["OrderStatus"];
+            /** Stop Loss */
+            stop_loss: string;
+            /** Symbol */
+            symbol: string;
+            /** Take Profit */
+            take_profit: string;
+            timeframe: components["schemas"]["Timeframe"];
+            /** Units */
+            units: string;
+            /** Unrealized Pnl */
+            unrealized_pnl?: string | null;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+        };
+        /**
+         * PaperRefreshResult
+         * @description Resultado de `POST /paper/refresh`.
+         */
+        PaperRefreshResult: {
+            /** Orders Checked */
+            orders_checked: number;
+            /** Orders Closed */
+            orders_closed: number;
+            /** Orders Filled */
+            orders_filled: number;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
         };
         /**
          * Playbook
@@ -961,6 +1328,47 @@ export interface operations {
             };
         };
     };
+    get_journal_api_v1_journal_get: {
+        parameters: {
+            query?: {
+                /** @description Filtra por símbolo */
+                symbol?: string | null;
+                /** @description Máximo de señales */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalSchema"];
+                };
+            };
+            /** @description Instrumento desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_instruments_api_v1_market_instruments_get: {
         parameters: {
             query?: never;
@@ -1067,6 +1475,58 @@ export interface operations {
             };
         };
     };
+    get_blotter_api_v1_paper_blotter_get: {
+        parameters: {
+            query?: {
+                /** @description Filtra por estado de la orden */
+                status?: components["schemas"]["OrderStatus"] | null;
+                /** @description Máximo de órdenes */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlotterSchema"];
+                };
+            };
+            /** @description Parámetros de consulta inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_refresh_api_v1_paper_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperRefreshResult"];
+                };
+            };
+        };
+    };
     post_backtest_api_v1_quant_backtest_post: {
         parameters: {
             query?: never;
@@ -1136,6 +1596,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    execute_signal_api_v1_signals__signal_id__execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                signal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderReceiptSchema"];
+                };
+            };
+            /** @description Señal desconocida */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Señal no aprobada, ya ejecutada o vetada por las guardas de cartera */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Identificador de señal inválido */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

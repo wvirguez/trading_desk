@@ -54,9 +54,9 @@ Regla de cada grupo: **esquema → tests → implementación**, y termina en un 
 
 ## 6. Tipos TS generados
 
-- [ ] 6.1. `uv run python scripts/export_openapi.py` → `backend/openapi.json` actualizado.
-- [ ] 6.2. En `frontend/`: `npm run gen:api` → `frontend/types/api.ts`. Comprobar que existen `OrderReceiptSchema`, `PaperOrderSchema`, `BlotterSchema`, `PaperRefreshResult`, `JournalSchema`, `JournalEntrySchema`, `JournalSummarySchema`, `OrderStatus` y las rutas `execute`, `paper/refresh`, `paper/blotter` y `journal`. No se escribe ningún tipo de API a mano.
-- [ ] 6.3. `npm run typecheck` y `npm run build` pasan; sin diff al regenerar por segunda vez.
+- [x] 6.1. `uv run python scripts/export_openapi.py` → `backend/openapi.json` actualizado.
+- [x] 6.2. En `frontend/`: `npm run gen:api` → `frontend/types/api.ts`. Comprobar que existen `OrderReceiptSchema`, `PaperOrderSchema`, `BlotterSchema`, `PaperRefreshResult`, `JournalSchema`, `JournalEntrySchema`, `JournalSummarySchema`, `OrderStatus` y las rutas `execute`, `paper/refresh`, `paper/blotter` y `journal`. No se escribe ningún tipo de API a mano.
+- [x] 6.3. `npm run typecheck` y `npm run build` pasan; sin diff al regenerar por segunda vez.
 - [ ] 6.4. Commit: `Ud: contrato OpenAPI y tipos TS de paper trading y journal`.
 
 ## 7. UI de Next.js
