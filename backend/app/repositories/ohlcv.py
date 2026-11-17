@@ -133,3 +133,42 @@ async def fetch_range(
         )
         for bar in reversed(bars)
     ]
+
+
+async def fetch_forward(
+    session: AsyncSession,
+    instrument_id: int,
+    timeframe: Timeframe,
+    symbol: str,
+    start: datetime,
+    limit: int,
+) -> list[CandleSchema]:
+    """Las PRIMERAS `limit` velas con `ts >= start`, en orden ascendente.
+
+    A diferencia de `fetch_range` (que conserva las últimas), permite recorrer una serie larga
+    por páginas desde su inicio: la siguiente página empieza en `última.ts + duración`.
+    """
+    stmt = (
+        select(OhlcvBar)
+        .where(
+            OhlcvBar.instrument_id == instrument_id,
+            OhlcvBar.timeframe == timeframe.value,
+            OhlcvBar.ts >= start,
+        )
+        .order_by(OhlcvBar.ts.asc())
+        .limit(limit)
+    )
+    bars = (await session.execute(stmt)).scalars().all()
+    return [
+        CandleSchema(
+            symbol=symbol,
+            timeframe=timeframe,
+            ts=bar.ts,
+            open=bar.open,
+            high=bar.high,
+            low=bar.low,
+            close=bar.close,
+            volume=bar.volume,
+        )
+        for bar in bars
+    ]

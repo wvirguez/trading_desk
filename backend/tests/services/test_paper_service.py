@@ -22,6 +22,7 @@ from app.schemas.enums import (
 )
 from app.schemas.risk import PositionSizeResult
 from app.schemas.signals import TradeSignalSchema
+from app.services import paper as paper_service
 from app.services.paper import refresh_orders
 
 pytestmark = [pytest.mark.db, pytest.mark.usefixtures("use_test_db")]
@@ -150,3 +151,50 @@ async def test_el_avance_es_incremental_entre_llamadas(db_session: AsyncSession)
 
     assert (result.orders_filled, result.orders_closed) == (0, 1)
     assert await orders_repo.sum_realized_pnl(db_session) == Decimal("-0.1")
+
+
+async def test_mas_velas_que_la_pagina_no_pierde_las_primeras(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Con más velas que el tope por lectura se procesan TODAS, de la más antigua a la reciente."""
+    monkeypatch.setattr(paper_service, "_PAGE_SIZE", 2)
+    instrument_id, _ = await _new_order(db_session)
+    await ohlcv_repo.upsert_candles(
+        db_session,
+        instrument_id,
+        [
+            _candle(T0, "1.1", "1.102", "1.099", "1.1"),  # fill (SHORT en 1.1)
+            _candle(T0 + H, "1.1", "1.105", "1.095", "1.1"),
+            _candle(T0 + 2 * H, "1.1", "1.109", "1.09", "1.1"),
+            _candle(T0 + 3 * H, "1.1", "1.101", "1.079", "1.08"),  # toca el TP (SHORT)
+            _candle(T0 + 4 * H, "1.1", "1.12", "1.09", "1.11"),  # SL, pero ya cerrada antes
+        ],
+    )
+    await db_session.commit()
+
+    result = await refresh_orders(db_session, T0 + 6 * H)
+
+    assert (result.orders_checked, result.orders_filled, result.orders_closed) == (1, 1, 1)
+    assert await orders_repo.list_open_orders(db_session) == []
+    assert await orders_repo.sum_realized_pnl(db_session) == Decimal("0.2")  # TP, no SL
+
+
+async def test_paginado_equivale_a_una_sola_lectura(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """El estado con paginas de 2 velas es el mismo que con una sola lectura (sin cierre)."""
+    monkeypatch.setattr(paper_service, "_PAGE_SIZE", 2)
+    instrument_id, _ = await _new_order(db_session)
+    await ohlcv_repo.upsert_candles(
+        db_session,
+        instrument_id,
+        [_candle(T0 + i * H, "1.1", "1.102", "1.099", "1.1") for i in range(5)],
+    )
+    await db_session.commit()
+
+    result = await refresh_orders(db_session, T0 + 6 * H)
+
+    assert (result.orders_filled, result.orders_closed) == (1, 0)
+    [(order, _)] = await orders_repo.list_open_orders(db_session)
+    assert order.status == OrderStatus.OPEN.value
+    assert order.filled_at == T0 and order.last_processed_ts == T0 + 4 * H

@@ -122,3 +122,20 @@ async def test_fetch_range_aisla_instrumento_y_timeframe(db_session: AsyncSessio
     assert otro is not None
     assert await repo.fetch_range(db_session, otro.id, Timeframe.H1, "EUR/USD", None, None, 9) == []
     assert await repo.fetch_range(db_session, iid, Timeframe.D1, "BTC/USDT", None, None, 9) == []
+
+
+async def test_fetch_forward_devuelve_las_primeras_velas_desde_start(
+    db_session: AsyncSession,
+) -> None:
+    iid = await _btc_id(db_session)
+    await repo.upsert_candles(db_session, iid, _candles(10))
+    tf, sym = Timeframe.H1, "BTC/USDT"
+
+    primeras = await repo.fetch_forward(db_session, iid, tf, sym, T0 + timedelta(hours=2), 3)
+    assert [c.ts.hour for c in primeras] == [2, 3, 4]  # las PRIMERAS, no las últimas
+    assert primeras[0].symbol == sym
+
+    todas = await repo.fetch_forward(db_session, iid, tf, sym, T0, 100)
+    assert [c.ts.hour for c in todas] == list(range(10))
+
+    assert await repo.fetch_forward(db_session, iid, tf, sym, T0 + timedelta(days=5), 3) == []
